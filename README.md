@@ -14,6 +14,7 @@ This repo is the source of truth for:
 - `host/` compatibility wrappers for legacy script paths
 - `docs/serial_protocol.md` protocol contract
 - `docs/abstraction_mapping.md` high-level abstraction model
+- `docs/halo_bench_integration.md` SYC-00048 and cross-repo ownership notes
 - `docs/agent_runbook.md` deterministic validation flow
 
 ## Install the Python library
