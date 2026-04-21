@@ -14,7 +14,6 @@ This repository hosts an ESP32 MCP IO extender stack (firmware + host bridge + M
 - `agents/skills/python-integration-api.skills.md`
 - `agents/skills/verification-and-safety.skills.md`
 - `agents/skills/git-workflow-hygiene.skills.md`
-- `agents/skills/halo-bench-integration.skills.md`
 
 ## Guardrails
 - Preserve board safety policy as non-negotiable.
