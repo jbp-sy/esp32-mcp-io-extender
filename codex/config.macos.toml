@@ -1,9 +1,9 @@
 # macOS example
 
 [mcp_servers.esp32_gpio]
-command = "/Users/USER/esp32_gpio_codex/host/.venv/bin/python"
-args = ["/Users/USER/esp32_gpio_codex/host/mcp_gpio_server.py"]
-cwd = "/Users/USER/esp32_gpio_codex/host"
+command = "/Users/USER/esp32-mcp-io-extender/host/.venv/bin/python"
+args = ["/Users/USER/esp32-mcp-io-extender/host/mcp_gpio_server.py"]
+cwd = "/Users/USER/esp32-mcp-io-extender/host"
 
 [mcp_servers.esp32_gpio.env]
 ESP_GPIO_PORT = "/dev/tty.usbmodemXXXX"

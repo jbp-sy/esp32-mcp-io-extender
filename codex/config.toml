@@ -2,9 +2,9 @@
 # Replace ABSOLUTE paths and set ESP_GPIO_PORT if auto-detection is not reliable.
 
 [mcp_servers.esp32_gpio]
-command = "/ABSOLUTE/PATH/TO/esp32_gpio_codex/host/.venv/bin/python"
-args = ["/ABSOLUTE/PATH/TO/esp32_gpio_codex/host/mcp_gpio_server.py"]
-cwd = "/ABSOLUTE/PATH/TO/esp32_gpio_codex/host"
+command = "/ABSOLUTE/PATH/TO/esp32-mcp-io-extender/host/.venv/bin/python"
+args = ["/ABSOLUTE/PATH/TO/esp32-mcp-io-extender/host/mcp_gpio_server.py"]
+cwd = "/ABSOLUTE/PATH/TO/esp32-mcp-io-extender/host"
 
 [mcp_servers.esp32_gpio.env]
 ESP_GPIO_PORT = ""

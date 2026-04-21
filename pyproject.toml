@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "esp32-mcp-io-extender"
+version = "0.2.0"
+description = "ESP32 GPIO/UART protocol bridge with MCP and high-level workbench API"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "pyserial>=3.5,<4",
+]
+
+[project.optional-dependencies]
+mcp = [
+  "fastmcp>=2.12.0,<3",
+]
+dev = [
+  "pytest>=8.0",
+]
+
+[project.scripts]
+esp32-mcp-io-extender = "esp32_mcp_io_extender.cli:main"
+esp32-mcp-io-extender-mcp = "esp32_mcp_io_extender.mcp_server:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

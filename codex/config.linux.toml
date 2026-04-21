@@ -1,9 +1,9 @@
 # Linux example
 
 [mcp_servers.esp32_gpio]
-command = "/home/USER/esp32_gpio_codex/host/.venv/bin/python"
-args = ["/home/USER/esp32_gpio_codex/host/mcp_gpio_server.py"]
-cwd = "/home/USER/esp32_gpio_codex/host"
+command = "/home/USER/esp32-mcp-io-extender/host/.venv/bin/python"
+args = ["/home/USER/esp32-mcp-io-extender/host/mcp_gpio_server.py"]
+cwd = "/home/USER/esp32-mcp-io-extender/host"
 
 [mcp_servers.esp32_gpio.env]
 ESP_GPIO_PORT = "/dev/ttyACM0"
