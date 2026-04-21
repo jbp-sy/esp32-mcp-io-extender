@@ -1,7 +1,7 @@
 # Skill: Verification and Safety
 
 ## Minimum verification
-1. `python3 -m py_compile host/esp_gpio_bridge.py host/mcp_gpio_server.py host/gpio_cli.py`
+1. `python3 -m py_compile src/esp32_mcp_io_extender/bridge.py src/esp32_mcp_io_extender/mcp_server.py src/esp32_mcp_io_extender/cli.py src/esp32_mcp_io_extender/workbench.py`
 2. If firmware changed: `cd firmware && pio run`
 3. If hardware available: run `docs/agent_runbook.md`
 
