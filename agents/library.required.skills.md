@@ -5,5 +5,6 @@ Agents should import these skills before making changes:
 - `agents/skills/protocol-and-compatibility.skills.md`
 - `agents/skills/python-integration-api.skills.md`
 - `agents/skills/verification-and-safety.skills.md`
+- `agents/skills/git-workflow-hygiene.skills.md`
 
 Intent: enforce protocol-safe, integration-friendly development.
