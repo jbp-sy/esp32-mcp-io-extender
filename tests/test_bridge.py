@@ -79,3 +79,78 @@ def test_call_maps_firmware_error_to_device_error(monkeypatch) -> None:
 
     assert exc.value.code == "pin_blocked"
     assert exc.value.details == {"pin": 9}
+
+
+def test_capability_snapshot_checks_pin_capability() -> None:
+    snapshot = bridge.CapabilitySnapshot(
+        policy={
+            "pin_capabilities": {
+                "4": {"digital_out": True, "digital_in": True},
+                "20": {"digital_out": False},
+            }
+        }
+    )
+
+    assert snapshot.pin_supports(4, "digital_out") is True
+    assert snapshot.pin_supports(20, "digital_out") is False
+    assert snapshot.pin_supports(99, "digital_out") is False
+
+
+def test_list_devices_passive_uses_candidate_scores(monkeypatch) -> None:
+    monkeypatch.setattr(
+        bridge.EspGpioBridge,
+        "list_candidate_ports",
+        staticmethod(
+            lambda: [
+                bridge.PortCandidate(device="/dev/cu.usbmodem1", description="ESP32 USB", score=9),
+                bridge.PortCandidate(device="/dev/cu.usbserial2", description="USB serial", score=4),
+            ]
+        ),
+    )
+
+    devices = bridge.EspGpioBridge.list_devices(probe=False)
+
+    assert [item.device for item in devices] == ["/dev/cu.usbmodem1", "/dev/cu.usbserial2"]
+    assert devices[0].is_protocol_device is False
+    assert devices[0].info is None
+
+
+def test_list_devices_probe_marks_protocol_devices(monkeypatch) -> None:
+    monkeypatch.setattr(
+        bridge.EspGpioBridge,
+        "list_candidate_ports",
+        staticmethod(lambda: [bridge.PortCandidate(device="/dev/cu.usbmodem1", description="ESP32 USB", score=9)]),
+    )
+
+    def fake_request(self, payload):
+        assert payload == {"cmd": "ping"}
+        return {"ok": True, "meta": {"protocol": bridge.PROTOCOL_NAME}}
+
+    def fake_call(self, cmd, **kwargs):
+        assert cmd == "info"
+        assert kwargs == {}
+        return {"board_id": "esp-rs-esp32-c3", "policy": {"allowed_pins": [4]}}
+
+    monkeypatch.setattr(bridge.EspGpioBridge, "request", fake_request)
+    monkeypatch.setattr(bridge.EspGpioBridge, "call", fake_call)
+    monkeypatch.setattr(bridge.EspGpioBridge, "close", lambda self: None)
+
+    devices = bridge.EspGpioBridge.list_devices(probe=True)
+
+    assert len(devices) == 1
+    assert devices[0].is_protocol_device is True
+    assert devices[0].info == {"board_id": "esp-rs-esp32-c3", "policy": {"allowed_pins": [4]}}
+    assert devices[0].error is None
+
+
+def test_bridge_capabilities_wraps_info_policy(monkeypatch) -> None:
+    b = bridge.EspGpioBridge(bridge.SerialConfig(port="/dev/test", auto_port=False))
+    monkeypatch.setattr(
+        b,
+        "call",
+        lambda cmd: {"policy": {"pin_capabilities": {"4": {"digital_out": True}}}},
+    )
+
+    snapshot = b.capabilities()
+
+    assert snapshot.pin_supports(4, "digital_out") is True

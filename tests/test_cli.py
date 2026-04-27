@@ -1,0 +1,121 @@
+from __future__ import annotations
+
+import pytest
+
+import esp32_mcp_io_extender.cli as cli
+from esp32_mcp_io_extender.bridge import CapabilitySnapshot, DetectedDevice
+
+
+class _FakeBridge:
+    devices = [
+        DetectedDevice(device="/dev/cu.usbmodem1", description="ESP32 USB", score=9),
+    ]
+    calls: list[tuple[str, dict]] = []
+    snapshots: list[CapabilitySnapshot] = [
+        CapabilitySnapshot(policy={"pin_capabilities": {"4": {"digital_out": True, "digital_in": True}}})
+    ]
+
+    def __init__(self, config) -> None:
+        self.config = config
+
+    @classmethod
+    def list_devices(cls, probe: bool = False):
+        cls.calls.append(("list_devices", {"probe": probe}))
+        return cls.devices
+
+    def capabilities(self) -> CapabilitySnapshot:
+        return self.snapshots[-1]
+
+    def request(self, payload):
+        self.calls.append(("request", payload))
+        return {"ok": True, "result": {"pong": True}}
+
+    def call(self, cmd: str, **kwargs):
+        self.calls.append((cmd, kwargs))
+        return {"cmd": cmd, **kwargs}
+
+    def close(self) -> None:
+        self.calls.append(("close", {}))
+
+
+@pytest.fixture(autouse=True)
+def fake_bridge(monkeypatch):
+    _FakeBridge.calls = []
+    _FakeBridge.devices = [
+        DetectedDevice(device="/dev/cu.usbmodem1", description="ESP32 USB", score=9),
+    ]
+    _FakeBridge.snapshots = [
+        CapabilitySnapshot(policy={"pin_capabilities": {"4": {"digital_out": True, "digital_in": True}}})
+    ]
+    monkeypatch.setattr(cli, "EspGpioBridge", _FakeBridge)
+
+
+def test_parser_accepts_list_devices_without_subcommand() -> None:
+    args = cli.build_parser().parse_args(["--list-devices", "--probe"])
+
+    assert args.list_devices is True
+    assert args.probe is True
+    assert args.command is None
+
+
+def test_main_lists_devices(capsys) -> None:
+    code = cli.main(["--list-devices", "--probe"])
+
+    assert code == 0
+    assert ("list_devices", {"probe": True}) in _FakeBridge.calls
+    assert "/dev/cu.usbmodem1" in capsys.readouterr().out
+
+
+def test_main_lists_capabilities(capsys) -> None:
+    code = cli.main(["--port", "/dev/test", "--list-capabilities"])
+
+    assert code == 0
+    assert "pin_capabilities" in capsys.readouterr().out
+
+
+def test_grouped_gpio_pulse_checks_capability_and_calls_bridge() -> None:
+    code = cli.main(["--port", "/dev/test", "gpio", "pulse", "--pin", "4", "--state", "1", "--duration-ms", "100"])
+
+    assert code == 0
+    assert ("digital_write_pulse", {"pin": 4, "value": 1, "duration_ms": 100, "restore": 0}) in _FakeBridge.calls
+
+
+def test_flat_gpio_duration_uses_pulse() -> None:
+    code = cli.main(["--port", "/dev/test", "--gpio", "4", "--state", "1", "--duration-ms", "100"])
+
+    assert code == 0
+    assert ("digital_write_pulse", {"pin": 4, "value": 1, "duration_ms": 100, "restore": 0}) in _FakeBridge.calls
+
+
+def test_flat_gpio_without_duration_uses_write() -> None:
+    code = cli.main(["--port", "/dev/test", "--gpio", "4", "--state", "1"])
+
+    assert code == 0
+    assert ("write", {"pin": 4, "value": 1}) in _FakeBridge.calls
+
+
+def test_grouped_uart_open_uses_uart_baud_without_changing_serial_baud() -> None:
+    code = cli.main(["--port", "/dev/test", "uart", "open", "--baud", "9600"])
+
+    assert code == 0
+    assert ("uart_open", {
+        "baud": 9600,
+        "rx_pin": 20,
+        "tx_pin": 21,
+        "data_bits": 8,
+        "parity": "N",
+        "stop_bits": 1,
+        "timeout_ms": 20,
+    }) in _FakeBridge.calls
+
+
+def test_blocked_pin_fails_before_calling_write(capsys) -> None:
+    _FakeBridge.snapshots = [
+        CapabilitySnapshot(policy={"pin_capabilities": {"4": {"digital_out": False}}})
+    ]
+
+    code = cli.main(["--port", "/dev/test", "gpio", "write", "--pin", "4", "--state", "1"])
+
+    assert code == 2
+    assert ("write", {"pin": 4, "value": 1}) not in _FakeBridge.calls
+    assert "does not offer digital_out" in capsys.readouterr().err

@@ -78,9 +78,17 @@ See [docs/abstraction_mapping.md](docs/abstraction_mapping.md) for mapping guida
 After install:
 
 ```bash
-esp32-mcp-io-extender --help
-esp32-mcp-io-extender --port /dev/tty.usbmodem1101 ping
+esp32mcpio --help
+esp32mcpio --list-devices
+esp32mcpio --list-devices --probe
+esp32mcpio --port /dev/tty.usbmodem1101 --list-capabilities
+esp32mcpio --port /dev/tty.usbmodem1101 ping
+esp32mcpio --port /dev/tty.usbmodem1101 gpio pulse --pin 4 --state 1 --duration-ms 100
+esp32mcpio --port /dev/tty.usbmodem1101 uart open --baud 115200
 ```
+
+The previous `esp32-mcp-io-extender` CLI entrypoint remains available and maps to
+the same command implementation.
 
 Legacy compatibility script still works:
 

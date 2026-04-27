@@ -101,6 +101,10 @@ Returns board/chip metadata and policy:
 - `policy.pin_capabilities`
 - `policy.named_pins`
 
+Host tools use this policy as the capability source for `esp32mcpio
+--list-capabilities` and for preflight checks before GPIO operations. Firmware
+policy remains authoritative if host preflight is bypassed.
+
 ### `state`
 Returns tracked runtime state:
 - `pin_modes`

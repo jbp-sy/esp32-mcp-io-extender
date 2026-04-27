@@ -2,6 +2,8 @@
 
 from .bridge import (
     PROTOCOL_NAME,
+    CapabilitySnapshot,
+    DetectedDevice,
     DeviceError,
     EspGpioBridge,
     GpioBridgeError,
@@ -19,6 +21,8 @@ from .workbench import (
 
 __all__ = [
     "PROTOCOL_NAME",
+    "CapabilitySnapshot",
+    "DetectedDevice",
     "DeviceError",
     "EspGpioBridge",
     "GpioBridgeError",

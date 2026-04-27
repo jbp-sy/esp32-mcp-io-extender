@@ -5,19 +5,15 @@ This runbook is designed for an autonomous agent to bring up and verify the boar
 ## Preconditions
 - USB-connected ESP32-C3 board.
 - Working directory: project root.
-- Python venv exists in `host/.venv`.
+- Python venv exists in `.venv` with `pip install -e '.[dev,mcp]'`.
 - PlatformIO available (`pio`) or `firmware/.venv_pio` with `platformio` installed.
 
 ## 1) Discover candidate serial ports
 
 ```bash
-cd host
 source .venv/bin/activate
-python - <<'PY'
-from esp_gpio_bridge import EspGpioBridge
-for p in EspGpioBridge.list_candidate_ports():
-    print(f"{p.device}\t{p.description}\tscore={p.score}")
-PY
+esp32mcpio --list-devices
+esp32mcpio --list-devices --probe
 ```
 
 Pass criteria:
@@ -55,16 +51,16 @@ Pass criteria:
 ## 4) GPIO + protocol smoke test
 
 ```bash
-cd host
 source .venv/bin/activate
-python gpio_cli.py --port "$ESP_PORT" ping
-python gpio_cli.py --port "$ESP_PORT" info
-python gpio_cli.py --port "$ESP_PORT" set-mode 4 output
-python gpio_cli.py --port "$ESP_PORT" write 4 1
-python gpio_cli.py --port "$ESP_PORT" write 4 0
-python gpio_cli.py --port "$ESP_PORT" set-mode 3 input_pullup
-python gpio_cli.py --port "$ESP_PORT" read 3
-python gpio_cli.py --port "$ESP_PORT" adc 1
+esp32mcpio --port "$ESP_PORT" ping
+esp32mcpio --port "$ESP_PORT" info
+esp32mcpio --port "$ESP_PORT" --list-capabilities
+esp32mcpio --port "$ESP_PORT" gpio set-mode --pin 4 --mode output
+esp32mcpio --port "$ESP_PORT" gpio write --pin 4 --state 1
+esp32mcpio --port "$ESP_PORT" gpio write --pin 4 --state 0
+esp32mcpio --port "$ESP_PORT" gpio set-mode --pin 3 --mode input_pullup
+esp32mcpio --port "$ESP_PORT" gpio read --pin 3
+esp32mcpio --port "$ESP_PORT" gpio adc --pin 1
 ```
 
 Pass criteria:
@@ -75,13 +71,12 @@ Pass criteria:
 ## 5) UART bridge smoke test
 
 ```bash
-cd host
 source .venv/bin/activate
-python gpio_cli.py --port "$ESP_PORT" uart-info
-python gpio_cli.py --port "$ESP_PORT" uart-open --baud 115200
-python gpio_cli.py --port "$ESP_PORT" uart-write-text "uart test" --append-newline
-python gpio_cli.py --port "$ESP_PORT" uart-read --max-bytes 64 --timeout-ms 50
-python gpio_cli.py --port "$ESP_PORT" uart-close
+esp32mcpio --port "$ESP_PORT" uart info
+esp32mcpio --port "$ESP_PORT" uart open --baud 115200
+esp32mcpio --port "$ESP_PORT" uart write-text "uart test" --append-newline
+esp32mcpio --port "$ESP_PORT" uart read --max-bytes 64 --timeout-ms 50
+esp32mcpio --port "$ESP_PORT" uart close
 ```
 
 Pass criteria:
@@ -92,11 +87,10 @@ Pass criteria:
 ## 6) Safety checks (must fail)
 
 ```bash
-cd host
 source .venv/bin/activate
-python gpio_cli.py --port "$ESP_PORT" set-mode 21 output
-python gpio_cli.py --port "$ESP_PORT" write 9 1
-python gpio_cli.py --port "$ESP_PORT" uart-read --max-bytes 16 --timeout-ms 20
+esp32mcpio --port "$ESP_PORT" gpio set-mode --pin 21 --mode output
+esp32mcpio --port "$ESP_PORT" gpio write --pin 9 --state 1
+esp32mcpio --port "$ESP_PORT" uart read --max-bytes 16 --timeout-ms 20
 ```
 
 Expected failures:

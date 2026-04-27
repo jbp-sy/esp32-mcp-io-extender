@@ -52,6 +52,35 @@ class PortCandidate:
     score: int
 
 
+@dataclass(slots=True)
+class DetectedDevice:
+    device: str
+    description: str
+    score: int
+    is_protocol_device: bool = False
+    info: dict[str, Any] | None = None
+    error: str | None = None
+
+
+@dataclass(slots=True)
+class CapabilitySnapshot:
+    policy: dict[str, Any]
+    info: dict[str, Any] | None = None
+
+    def pin_supports(self, pin: int, capability: str) -> bool:
+        pin_caps = self.policy.get("pin_capabilities")
+        if not isinstance(pin_caps, dict):
+            return False
+
+        caps = pin_caps.get(str(pin))
+        if not isinstance(caps, dict):
+            caps = pin_caps.get(pin)
+        if not isinstance(caps, dict):
+            return False
+
+        return bool(caps.get(capability, False))
+
+
 class EspGpioBridge:
     def __init__(self, config: SerialConfig):
         self.config = config
@@ -80,6 +109,66 @@ class EspGpioBridge:
 
         candidates.sort(key=lambda c: c.score, reverse=True)
         return candidates
+
+    @staticmethod
+    def list_devices(probe: bool = False) -> list[DetectedDevice]:
+        devices: list[DetectedDevice] = []
+        for candidate in EspGpioBridge.list_candidate_ports():
+            if not probe:
+                devices.append(
+                    DetectedDevice(
+                        device=candidate.device,
+                        description=candidate.description,
+                        score=candidate.score,
+                    )
+                )
+                continue
+
+            bridge = EspGpioBridge(
+                SerialConfig(
+                    port=candidate.device,
+                    timeout=0.6,
+                    boot_wait_s=0.2,
+                    reconnect_retries=0,
+                    auto_port=False,
+                )
+            )
+            try:
+                ping = bridge.request({"cmd": "ping"})
+                info = bridge.call("info")
+                protocol_ok = bool(ping.get("ok", False))
+                if isinstance(info, dict):
+                    devices.append(
+                        DetectedDevice(
+                            device=candidate.device,
+                            description=candidate.description,
+                            score=candidate.score,
+                            is_protocol_device=protocol_ok,
+                            info=info,
+                        )
+                    )
+                else:
+                    devices.append(
+                        DetectedDevice(
+                            device=candidate.device,
+                            description=candidate.description,
+                            score=candidate.score,
+                            error="info response was not an object",
+                        )
+                    )
+            except Exception as exc:  # pragma: no cover - serial failure shape varies by platform
+                devices.append(
+                    DetectedDevice(
+                        device=candidate.device,
+                        description=candidate.description,
+                        score=candidate.score,
+                        error=str(exc),
+                    )
+                )
+            finally:
+                bridge.close()
+
+        return devices
 
     def _resolve_port(self) -> str:
         if self.config.port:
@@ -207,6 +296,17 @@ class EspGpioBridge:
             raise DeviceError(code="unknown_device_error", message=str(error), raw=resp)
 
         return resp.get("result")
+
+    def capabilities(self) -> CapabilitySnapshot:
+        result = self.call("info")
+        if not isinstance(result, dict):
+            raise DeviceError("invalid_info", "info response was not an object")
+
+        policy = result.get("policy")
+        if not isinstance(policy, dict):
+            raise DeviceError("invalid_info", "info response did not include policy")
+
+        return CapabilitySnapshot(policy=policy, info=result)
 
 
 def config_from_env() -> SerialConfig:

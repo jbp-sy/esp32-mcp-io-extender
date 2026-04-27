@@ -13,39 +13,37 @@ pio run -t upload
 ```
 
 ## 3) Identify serial device
-macOS:
+Use passive detection first, then probe candidates when it is safe to open the
+serial ports:
+
 ```bash
-ls /dev/tty.usbmodem*
-```
-Linux:
-```bash
-ls /dev/ttyACM* /dev/ttyUSB*
+esp32mcpio --list-devices
+esp32mcpio --list-devices --probe
 ```
 
 ## 4) Host environment
 ```bash
-cd host
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -r requirements.txt
+pip install -e '.[dev,mcp]'
 ```
 
 ## 5) CLI smoke checks
 ```bash
-cd host
 source .venv/bin/activate
-python gpio_cli.py --port /dev/tty.usbmodemXXXX ping
-python gpio_cli.py --port /dev/tty.usbmodemXXXX info
-python gpio_cli.py --port /dev/tty.usbmodemXXXX set-mode 4 output
-python gpio_cli.py --port /dev/tty.usbmodemXXXX write 4 1
-python gpio_cli.py --port /dev/tty.usbmodemXXXX write 4 0
-python gpio_cli.py --port /dev/tty.usbmodemXXXX set-mode 3 input_pullup
-python gpio_cli.py --port /dev/tty.usbmodemXXXX read 3
-python gpio_cli.py --port /dev/tty.usbmodemXXXX adc 4
-python gpio_cli.py --port /dev/tty.usbmodemXXXX uart-open --baud 115200
-python gpio_cli.py --port /dev/tty.usbmodemXXXX uart-info
-python gpio_cli.py --port /dev/tty.usbmodemXXXX uart-read --max-bytes 64 --timeout-ms 50
-python gpio_cli.py --port /dev/tty.usbmodemXXXX uart-close
+esp32mcpio --port /dev/tty.usbmodemXXXX ping
+esp32mcpio --port /dev/tty.usbmodemXXXX info
+esp32mcpio --port /dev/tty.usbmodemXXXX --list-capabilities
+esp32mcpio --port /dev/tty.usbmodemXXXX gpio set-mode --pin 4 --mode output
+esp32mcpio --port /dev/tty.usbmodemXXXX gpio write --pin 4 --state 1
+esp32mcpio --port /dev/tty.usbmodemXXXX gpio write --pin 4 --state 0
+esp32mcpio --port /dev/tty.usbmodemXXXX gpio set-mode --pin 3 --mode input_pullup
+esp32mcpio --port /dev/tty.usbmodemXXXX gpio read --pin 3
+esp32mcpio --port /dev/tty.usbmodemXXXX gpio adc --pin 4
+esp32mcpio --port /dev/tty.usbmodemXXXX uart open --baud 115200
+esp32mcpio --port /dev/tty.usbmodemXXXX uart info
+esp32mcpio --port /dev/tty.usbmodemXXXX uart read --max-bytes 64 --timeout-ms 50
+esp32mcpio --port /dev/tty.usbmodemXXXX uart close
 ```
 
 ## 6) MCP server run

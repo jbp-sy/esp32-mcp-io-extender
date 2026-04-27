@@ -21,6 +21,7 @@ dev = [
 ]
 
 [project.scripts]
+esp32mcpio = "esp32_mcp_io_extender.cli:main"
 esp32-mcp-io-extender = "esp32_mcp_io_extender.cli:main"
 esp32-mcp-io-extender-mcp = "esp32_mcp_io_extender.mcp_server:main"
 
