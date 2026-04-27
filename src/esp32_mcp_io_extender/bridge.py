@@ -177,6 +177,13 @@ class EspGpioBridge:
         if not self.config.auto_port:
             raise TransportError("serial port is required (set ESP_GPIO_PORT)")
 
+        # Prefer a device that positively responds to protocol probing so
+        # auto-port selection is stable in multi-device USB setups.
+        probed = self.list_devices(probe=True)
+        for device in probed:
+            if device.is_protocol_device:
+                return device.device
+
         candidates = self.list_candidate_ports()
         if not candidates:
             raise TransportError("no candidate serial ports found; set ESP_GPIO_PORT explicitly")

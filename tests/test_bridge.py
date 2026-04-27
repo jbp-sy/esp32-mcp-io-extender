@@ -154,3 +154,51 @@ def test_bridge_capabilities_wraps_info_policy(monkeypatch) -> None:
     snapshot = b.capabilities()
 
     assert snapshot.pin_supports(4, "digital_out") is True
+
+
+def test_resolve_port_prefers_protocol_device_when_auto_port(monkeypatch) -> None:
+    monkeypatch.setattr(
+        bridge.EspGpioBridge,
+        "list_devices",
+        staticmethod(
+            lambda probe=False: [
+                bridge.DetectedDevice(device="/dev/cu.usbserial-ftdi", description="FTDI", score=8, is_protocol_device=False),
+                bridge.DetectedDevice(device="/dev/cu.usbmodem-esp32", description="ESP32", score=6, is_protocol_device=True),
+            ]
+        ),
+    )
+    monkeypatch.setattr(
+        bridge.EspGpioBridge,
+        "list_candidate_ports",
+        staticmethod(lambda: [bridge.PortCandidate(device="/dev/cu.usbserial-ftdi", description="FTDI", score=8)]),
+    )
+
+    b = bridge.EspGpioBridge(bridge.SerialConfig(auto_port=True))
+
+    assert b._resolve_port() == "/dev/cu.usbmodem-esp32"
+
+
+def test_resolve_port_falls_back_to_first_candidate_when_probe_finds_no_protocol(monkeypatch) -> None:
+    monkeypatch.setattr(
+        bridge.EspGpioBridge,
+        "list_devices",
+        staticmethod(
+            lambda probe=False: [
+                bridge.DetectedDevice(device="/dev/cu.usbserial-ftdi", description="FTDI", score=8, is_protocol_device=False),
+            ]
+        ),
+    )
+    monkeypatch.setattr(
+        bridge.EspGpioBridge,
+        "list_candidate_ports",
+        staticmethod(
+            lambda: [
+                bridge.PortCandidate(device="/dev/cu.usbserial-ftdi", description="FTDI", score=8),
+                bridge.PortCandidate(device="/dev/cu.usbmodem-other", description="Other", score=6),
+            ]
+        ),
+    )
+
+    b = bridge.EspGpioBridge(bridge.SerialConfig(auto_port=True))
+
+    assert b._resolve_port() == "/dev/cu.usbserial-ftdi"

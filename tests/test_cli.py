@@ -109,14 +109,22 @@ def test_flat_gpio_duration_uses_pulse() -> None:
     code = cli.main(["--port", "/dev/test", "--gpio", "4", "--state", "1", "--duration-ms", "100"])
 
     assert code == 0
-    assert ("digital_write_pulse", {"pin": 4, "value": 1, "duration_ms": 100, "restore": 0}) in _FakeBridge.calls
+    mode_call = ("set_mode", {"pin": 4, "mode": "output"})
+    pulse_call = ("digital_write_pulse", {"pin": 4, "value": 1, "duration_ms": 100, "restore": 0})
+    assert mode_call in _FakeBridge.calls
+    assert pulse_call in _FakeBridge.calls
+    assert _FakeBridge.calls.index(mode_call) < _FakeBridge.calls.index(pulse_call)
 
 
 def test_flat_gpio_without_duration_uses_write() -> None:
     code = cli.main(["--port", "/dev/test", "--gpio", "4", "--state", "1"])
 
     assert code == 0
-    assert ("write", {"pin": 4, "value": 1}) in _FakeBridge.calls
+    mode_call = ("set_mode", {"pin": 4, "mode": "output"})
+    write_call = ("write", {"pin": 4, "value": 1})
+    assert mode_call in _FakeBridge.calls
+    assert write_call in _FakeBridge.calls
+    assert _FakeBridge.calls.index(mode_call) < _FakeBridge.calls.index(write_call)
 
 
 def test_grouped_uart_open_uses_uart_baud_without_changing_serial_baud() -> None:

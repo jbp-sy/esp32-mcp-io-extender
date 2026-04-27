@@ -43,7 +43,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p.add_argument("--list-capabilities", action="store_true", help="Print firmware capability policy for --port")
 
-    p.add_argument("--gpio", type=int, help="Flat convenience GPIO pin selector")
+    p.add_argument("--gpio", type=int, help="Flat convenience GPIO pin selector (auto set-mode output)")
     p.add_argument("--state", type=int, choices=[0, 1], help="Flat convenience GPIO state")
     p.add_argument("--duration-ms", type=int, help="Flat convenience pulse duration")
     p.add_argument("--restore", type=int, default=0, choices=[0, 1], help="Flat convenience pulse restore state")
@@ -280,6 +280,7 @@ def _run_flat_gpio(bridge: EspGpioBridge, args: argparse.Namespace) -> Any:
         raise ValueError("--gpio requires --state")
 
     _require_pin_capability(bridge, args.gpio, "digital_out")
+    bridge.call("set_mode", pin=args.gpio, mode="output")
     if args.duration_ms is not None:
         return bridge.call(
             "digital_write_pulse",
