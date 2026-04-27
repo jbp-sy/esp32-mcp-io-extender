@@ -36,6 +36,30 @@ pip install -e .
 pip install -e '.[dev,mcp]'
 ```
 
+## CLI setup
+Use a local virtual environment so the CLI scripts are installed on your PATH:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -e '.[mcp]'
+esp32mcpio --help
+```
+
+Alternative script names (same implementation):
+
+```bash
+esp32-mcp-io-extender --help
+esp32-mcp-io-extender-mcp --help
+```
+
+If your shell cannot find the scripts, run the module directly:
+
+```bash
+python -m esp32_mcp_io_extender.cli --help
+python -m esp32_mcp_io_extender.mcp_server --help
+```
+
 ## Python usage
 ### Low-level bridge API
 ```python
@@ -80,11 +104,17 @@ After install:
 esp32mcpio --help
 esp32mcpio --list-devices
 esp32mcpio --list-devices --probe
+esp32mcpio --probe
 esp32mcpio --port /dev/tty.usbmodem1101 --list-capabilities
 esp32mcpio --port /dev/tty.usbmodem1101 ping
 esp32mcpio --port /dev/tty.usbmodem1101 gpio pulse --pin 4 --state 1 --duration-ms 100
 esp32mcpio --port /dev/tty.usbmodem1101 uart open --baud 115200
 ```
+
+Discovery behavior:
+- `--list-devices`: list serial candidates from USB descriptor heuristics.
+- `--list-devices --probe`: probe candidates and include protocol match status.
+- `--probe`: probe and return only protocol-compatible devices.
 
 The previous `esp32-mcp-io-extender` CLI entrypoint remains available and maps to
 the same command implementation.

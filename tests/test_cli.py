@@ -66,6 +66,31 @@ def test_main_lists_devices(capsys) -> None:
     assert "/dev/cu.usbmodem1" in capsys.readouterr().out
 
 
+def test_main_probe_without_list_devices_filters_to_protocol_matches(capsys) -> None:
+    _FakeBridge.devices = [
+        DetectedDevice(device="/dev/cu.usbmodem1", description="ESP32 USB", score=9, is_protocol_device=True),
+        DetectedDevice(device="/dev/cu.usbserial1", description="FTDI", score=6, is_protocol_device=False),
+    ]
+
+    code = cli.main(["--probe"])
+
+    out = capsys.readouterr().out
+    assert code == 0
+    assert ("list_devices", {"probe": True}) in _FakeBridge.calls
+    assert "/dev/cu.usbmodem1" in out
+    assert "/dev/cu.usbserial1" not in out
+
+
+def test_main_without_args_prints_help(capsys) -> None:
+    code = cli.main([])
+
+    captured = capsys.readouterr()
+    assert code == 0
+    assert "usage:" in captured.out
+    assert "Discovery examples:" in captured.out
+    assert captured.err == ""
+
+
 def test_main_lists_capabilities(capsys) -> None:
     code = cli.main(["--port", "/dev/test", "--list-capabilities"])
 

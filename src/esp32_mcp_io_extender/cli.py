@@ -12,13 +12,35 @@ PIN_MODES = ["input", "input_pullup", "input_pulldown", "output", "output_open_d
 
 
 def build_parser() -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(description="ESP32 MCP IO serial CLI")
+    p = argparse.ArgumentParser(
+        description="ESP32 MCP IO serial CLI",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=(
+            "Discovery examples:\n"
+            "  esp32mcpio --list-devices\n"
+            "  esp32mcpio --list-devices --probe\n"
+            "  esp32mcpio --probe\n"
+            "\n"
+            "Notes:\n"
+            "  --list-devices          Lists serial candidates from descriptor heuristics.\n"
+            "  --list-devices --probe  Probes candidates and reports protocol=true/false.\n"
+            "  --probe                 Probes and returns only protocol-compatible devices."
+        ),
+    )
     p.add_argument("--port", help="Serial port (default: auto-detect)")
     p.add_argument("--baud", dest="serial_baud", type=int, default=115200)
     p.add_argument("--timeout", type=float, default=2.0)
     p.add_argument("--retries", type=int, default=2)
-    p.add_argument("--list-devices", action="store_true", help="List candidate serial devices")
-    p.add_argument("--probe", action="store_true", help="Actively probe candidates with ping/info")
+    p.add_argument(
+        "--list-devices",
+        action="store_true",
+        help="List serial candidates (descriptor-heuristic based, no protocol handshake)",
+    )
+    p.add_argument(
+        "--probe",
+        action="store_true",
+        help="Probe with ping/info; when used alone, prints only protocol-compatible devices",
+    )
     p.add_argument("--list-capabilities", action="store_true", help="Print firmware capability policy for --port")
 
     p.add_argument("--gpio", type=int, help="Flat convenience GPIO pin selector")
@@ -324,8 +346,21 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
 
-    if args.list_devices:
-        print_json([_device_to_dict(device) for device in EspGpioBridge.list_devices(probe=args.probe)])
+    if (
+        args.command is None
+        and args.gpio is None
+        and not args.list_devices
+        and not args.probe
+        and not args.list_capabilities
+    ):
+        parser.print_help()
+        return 0
+
+    if args.list_devices or args.probe:
+        devices = EspGpioBridge.list_devices(probe=args.probe)
+        if args.probe and not args.list_devices:
+            devices = [device for device in devices if device.is_protocol_device]
+        print_json([_device_to_dict(device) for device in devices])
         return 0
 
     bridge: EspGpioBridge | None = None
