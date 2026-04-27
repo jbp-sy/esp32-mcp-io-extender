@@ -48,9 +48,8 @@ esp32mcpio --port /dev/tty.usbmodemXXXX uart close
 
 ## 6) MCP server run
 ```bash
-cd host
 source .venv/bin/activate
-ESP_GPIO_PORT=/dev/tty.usbmodemXXXX python mcp_gpio_server.py
+ESP_GPIO_PORT=/dev/tty.usbmodemXXXX python -m esp32_mcp_io_extender.mcp_server
 ```
 
 ## 7) MCP tool checks from Codex

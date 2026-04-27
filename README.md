@@ -11,7 +11,6 @@ This repo is the source of truth for:
 ## Repository layout
 - `firmware/` PlatformIO Arduino firmware
 - `src/esp32_mcp_io_extender/` installable Python package
-- `host/` compatibility wrappers for legacy script paths
 - `docs/serial_protocol.md` protocol contract
 - `docs/abstraction_mapping.md` high-level abstraction model
 - `docs/agent_runbook.md` deterministic validation flow
@@ -90,23 +89,9 @@ esp32mcpio --port /dev/tty.usbmodem1101 uart open --baud 115200
 The previous `esp32-mcp-io-extender` CLI entrypoint remains available and maps to
 the same command implementation.
 
-Legacy compatibility script still works:
-
-```bash
-cd host
-python gpio_cli.py --port /dev/tty.usbmodem1101 ping
-```
-
 ## MCP server usage
 ```bash
 ESP_GPIO_PORT=/dev/tty.usbmodem1101 python -m esp32_mcp_io_extender.mcp_server
-```
-
-Legacy compatibility script:
-
-```bash
-cd host
-ESP_GPIO_PORT=/dev/tty.usbmodem1101 python mcp_gpio_server.py
 ```
 
 ## Firmware setup

@@ -101,15 +101,8 @@ Expected failures:
 ## 7) MCP server verification
 
 ```bash
-cd host
 source .venv/bin/activate
-ESP_GPIO_PORT="$ESP_PORT" python - <<'PY'
-import mcp_gpio_server
-names = sorted(mcp_gpio_server.mcp._tool_manager._tools.keys())
-print("tool_count", len(names))
-for n in names:
-    print(n)
-PY
+ESP_GPIO_PORT="$ESP_PORT" python -m esp32_mcp_io_extender.mcp_server
 ```
 
 Required tool names must include:

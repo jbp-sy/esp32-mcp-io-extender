@@ -34,7 +34,7 @@
 - Added UART bridge state/config handling on reserved pins (`GPIO20`/`GPIO21`).
 
 ### Host
-- Split transport logic into reusable `esp_gpio_bridge.py`.
+- Split transport logic into reusable `esp32_mcp_io_extender.bridge`.
 - Added serial reconnect retries + backoff and optional auto-port detection.
 - Added explicit firmware/device error surfacing.
 - Kept required MCP tools and added optional tools:
@@ -42,7 +42,7 @@
   - `gpio_transaction`
   - `gpio_serial_ports`
   - `gpio_uart_*` toolset for UART debugging workflows
-- Added standalone CLI tester (`gpio_cli.py`) for bench diagnostics.
+- Added standalone CLI tester (`esp32mcpio`) for bench diagnostics.
 
 ### Documentation/config
 - Rewrote README with full setup and validation flow.
