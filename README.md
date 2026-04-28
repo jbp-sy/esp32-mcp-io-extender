@@ -1,6 +1,6 @@
 # ESP32 MCP IO Extender
 
-ESP32-C3 firmware + Python library for GPIO/UART control over serial JSONL.
+ESP32 firmware + Python library for GPIO/UART control over serial JSONL.
 
 This repo is the source of truth for:
 - firmware protocol and safety policy,
@@ -70,6 +70,15 @@ bridge.call("set_mode", pin=4, mode="output")
 bridge.call("write", pin=4, value=1)
 ```
 
+### Host-side UART PTY daemon API
+```python
+from esp32_mcp_io_extender import uart_pty_start, uart_pty_status, uart_pty_stop
+
+uart_pty_start(path="/tmp/uart.esp32", name="esp32")
+print(uart_pty_status(path="/tmp/uart.esp32"))
+uart_pty_stop(path="/tmp/uart.esp32")
+```
+
 ### High-level workbench API
 ```python
 from esp32_mcp_io_extender import (
@@ -109,12 +118,19 @@ esp32mcpio --port /dev/tty.usbmodem1101 --list-capabilities
 esp32mcpio --port /dev/tty.usbmodem1101 ping
 esp32mcpio --port /dev/tty.usbmodem1101 gpio pulse --pin 4 --state 1 --duration-ms 100
 esp32mcpio --port /dev/tty.usbmodem1101 uart open --baud 115200
+esp32mcpio --port /dev/tty.usbmodem1101 uart pty start --path /tmp/uart.esp32 --name esp32
+esp32mcpio uart pty status --path /tmp/uart.esp32
+esp32mcpio uart pty stop --path /tmp/uart.esp32
 ```
 
 Discovery behavior:
 - `--list-devices`: list serial candidates from USB descriptor heuristics.
 - `--list-devices --probe`: probe candidates and include protocol match status.
 - `--probe`: probe and return only protocol-compatible devices.
+
+UART command distinction:
+- `uart open|close|write-text|write-hex|read`: firmware UART bridge control.
+- `uart pty start|stop|status`: host PTY daemon lifecycle using explicit `--path`.
 
 The previous `esp32-mcp-io-extender` CLI entrypoint remains available and maps to
 the same command implementation.

@@ -92,7 +92,24 @@ Pass criteria:
 - `uart-close` returns `closed: true`.
 - `uart-read` returns structured payload (`bytes`, `hex`, `text`).
 
-## 6) Safety checks (must fail)
+## 6) UART PTY daemon smoke test (host-side)
+
+```bash
+source .venv/bin/activate
+esp32mcpio --port "$ESP_PORT" uart pty start --path /tmp/uart.esp32 --name esp32
+esp32mcpio uart pty status --path /tmp/uart.esp32
+ls -l /tmp/uart.esp32
+# optional: interact with your own serial client against /tmp/uart.esp32
+esp32mcpio uart pty stop --path /tmp/uart.esp32
+```
+
+Pass criteria:
+- `start` returns `running: true` with `path` and daemon `pid`.
+- `status` reports `running: true` while daemon is active.
+- `/tmp/uart.esp32` exists during runtime and is removed after `stop`.
+- `stop` returns `stopped: true`.
+
+## 7) Safety checks (must fail)
 
 ```bash
 source .venv/bin/activate
@@ -106,7 +123,7 @@ Expected failures:
 - `write 9 1` -> `pin_blocked`
 - `uart-read` when UART is closed -> `uart_not_open`
 
-## 7) MCP server verification
+## 8) MCP server verification
 
 ```bash
 source .venv/bin/activate
@@ -129,7 +146,7 @@ Required tool names must include:
 - `gpio_uart_write_hex`
 - `gpio_uart_read`
 
-## 8) Report template for agent handoff
+## 9) Report template for agent handoff
 
 Include:
 - exact port used

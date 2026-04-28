@@ -8,3 +8,6 @@ Agents should import these skills before making changes:
 - `agents/skills/git-workflow-hygiene.skills.md`
 
 Intent: enforce protocol-safe, integration-friendly development.
+
+For UART PTY daemon work, also require:
+- `docs/agent_runbook.md` section "UART PTY daemon smoke test (host-side)"
