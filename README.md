@@ -15,7 +15,7 @@ This repo is the source of truth for:
 - `docs/abstraction_mapping.md` high-level abstraction model
 - `docs/agent_runbook.md` deterministic validation flow
 
-## Install the Python library
+## Install
 From git (recommended for cross-repo integration):
 
 ```bash
@@ -36,7 +36,8 @@ pip install -e .
 pip install -e '.[dev,mcp]'
 ```
 
-## CLI setup
+## CLI
+### Setup
 Use a local virtual environment so the CLI scripts are installed on your PATH:
 
 ```bash
@@ -50,10 +51,52 @@ If your shell cannot find the scripts, run the module directly:
 
 ```bash
 python -m esp32_mcp_io_extender.cli --help
-ESP_GPIO_PORT=/dev/tty.usbmodem1101 python -m esp32_mcp_io_extender.mcp_server
 ```
 
-## Python usage
+### Usage
+```bash
+esp32mcpio --help
+esp32mcpio --list-devices
+esp32mcpio --list-devices --probe
+esp32mcpio --probe
+esp32mcpio --port /dev/tty.usbmodem1101 --list-capabilities
+esp32mcpio --port /dev/tty.usbmodem1101 ping
+esp32mcpio --port /dev/tty.usbmodem1101 gpio pulse --pin 4 --state 1 --duration-ms 100
+esp32mcpio --port /dev/tty.usbmodem1101 uart open --baud 115200
+esp32mcpio --port /dev/tty.usbmodem1101 uart pty start --path /tmp/uart.esp32 --name esp32
+esp32mcpio uart pty status --path /tmp/uart.esp32
+esp32mcpio uart pty stop --path /tmp/uart.esp32
+```
+
+Full CLI command surface:
+- top-level: `ping`, `info`, `state`
+- GPIO: `gpio set-mode|write|pulse|read|adc|pwm`
+- UART firmware bridge: `uart info|open|close|write-text|write-hex|read`
+- UART PTY daemon (host-side): `uart pty start|status|stop`
+- discovery/options: `--list-devices`, `--list-devices --probe`, `--probe`, `--list-capabilities`
+- flat convenience: `--gpio <pin> --state <0|1> [--duration-ms <ms>] [--restore <0|1>]`
+
+Discovery behavior:
+- `--list-devices`: list serial candidates from USB descriptor heuristics.
+- `--list-devices --probe`: probe candidates and include protocol match status.
+- `--probe`: probe and return only protocol-compatible devices.
+
+UART command distinction:
+- `uart open|close|write-text|write-hex|read`: firmware UART bridge control.
+- `uart pty start|stop|status`: host PTY daemon lifecycle using explicit `--path`.
+
+UART PTY daemon sidecar files (derived from `--path`):
+- `<path>`: symlink alias to active PTY slave (example `/tmp/uart.esp32`)
+- `<path>.esp32mcpio.pid`: daemon PID file
+- `<path>.esp32mcpio.state.json`: runtime state (`serial_port`, `pty_slave`, UART config, pins)
+- `<path>.esp32mcpio.lock`: startup/lifecycle lock file
+
+`esp32mcpio uart pty status --path <path>` reports:
+- lifecycle: `running`, `stale`, `pid`, `alias_exists`
+- sidecar locations: `pid_file`, `state_file`, `lock_file`
+- when available from state file: `serial_port`, `pty_slave`, `uart_baud`, `rx_pin`, `tx_pin`, `data_bits`, `parity`, `stop_bits`, `timeout_ms`
+
+## Python
 ### Low-level bridge API
 ```python
 from esp32_mcp_io_extender import EspGpioBridge, SerialConfig
@@ -108,52 +151,7 @@ Workbench semantics note:
 - `power_on()` / `power_off()` exist on `HaloBoardWorkbench`, but only use them if your `HaloWorkbenchConfig.signals` intentionally includes a GPIO-mapped `"power"` signal.
 - For benches where power is owned by PPK/external equipment, omit `"power"` from GPIO signals and use only reset/GP operations.
 
-## CLI usage
-After install:
-
-```bash
-esp32mcpio --help
-esp32mcpio --list-devices
-esp32mcpio --list-devices --probe
-esp32mcpio --probe
-esp32mcpio --port /dev/tty.usbmodem1101 --list-capabilities
-esp32mcpio --port /dev/tty.usbmodem1101 ping
-esp32mcpio --port /dev/tty.usbmodem1101 gpio pulse --pin 4 --state 1 --duration-ms 100
-esp32mcpio --port /dev/tty.usbmodem1101 uart open --baud 115200
-esp32mcpio --port /dev/tty.usbmodem1101 uart pty start --path /tmp/uart.esp32 --name esp32
-esp32mcpio uart pty status --path /tmp/uart.esp32
-esp32mcpio uart pty stop --path /tmp/uart.esp32
-```
-
-Full CLI command surface:
-- top-level: `ping`, `info`, `state`
-- GPIO: `gpio set-mode|write|pulse|read|adc|pwm`
-- UART firmware bridge: `uart info|open|close|write-text|write-hex|read`
-- UART PTY daemon (host-side): `uart pty start|status|stop`
-- discovery/options: `--list-devices`, `--list-devices --probe`, `--probe`, `--list-capabilities`
-- flat convenience: `--gpio <pin> --state <0|1> [--duration-ms <ms>] [--restore <0|1>]`
-
-Discovery behavior:
-- `--list-devices`: list serial candidates from USB descriptor heuristics.
-- `--list-devices --probe`: probe candidates and include protocol match status.
-- `--probe`: probe and return only protocol-compatible devices.
-
-UART command distinction:
-- `uart open|close|write-text|write-hex|read`: firmware UART bridge control.
-- `uart pty start|stop|status`: host PTY daemon lifecycle using explicit `--path`.
-
-UART PTY daemon sidecar files (derived from `--path`):
-- `<path>`: symlink alias to active PTY slave (example `/tmp/uart.esp32`)
-- `<path>.esp32mcpio.pid`: daemon PID file
-- `<path>.esp32mcpio.state.json`: runtime state (`serial_port`, `pty_slave`, UART config, pins)
-- `<path>.esp32mcpio.lock`: startup/lifecycle lock file
-
-`esp32mcpio uart pty status --path <path>` reports:
-- lifecycle: `running`, `stale`, `pid`, `alias_exists`
-- sidecar locations: `pid_file`, `state_file`, `lock_file`
-- when available from state file: `serial_port`, `pty_slave`, `uart_baud`, `rx_pin`, `tx_pin`, `data_bits`, `parity`, `stop_bits`, `timeout_ms`
-
-## MCP server usage
+## MCP server
 ```bash
 ESP_GPIO_PORT=/dev/tty.usbmodem1101 python -m esp32_mcp_io_extender.mcp_server
 ```
