@@ -50,7 +50,7 @@ If your shell cannot find the scripts, run the module directly:
 
 ```bash
 python -m esp32_mcp_io_extender.cli --help
-python -m esp32_mcp_io_extender.mcp_server --help
+ESP_GPIO_PORT=/dev/tty.usbmodem1101 python -m esp32_mcp_io_extender.mcp_server
 ```
 
 ## Python usage
@@ -85,14 +85,13 @@ from esp32_mcp_io_extender import (
 bridge = EspGpioBridge(SerialConfig(port="/dev/tty.usbmodem1101", auto_port=False))
 config = HaloWorkbenchConfig(
     signals={
-        "power": BoardSignal(name="power", pin=4),
         "reset": BoardSignal(name="reset", pin=5),
     },
     gp_aliases={"GP45": 4},
 )
 
 workbench = HaloBoardWorkbench(bridge, config)
-workbench.power_on()
+# Power sequencing is owned by PPK/external bench control, not GPIO.
 workbench.reset()
 workbench.gp("GP45").set(1)
 ```
@@ -104,6 +103,10 @@ See [docs/abstraction_mapping.md](docs/abstraction_mapping.md) for mapping guida
 - Errors: `GpioBridgeError`, `TransportError`, `DeviceError`
 - UART PTY helpers: `UartPtyManager`, `uart_pty_start`, `uart_pty_status`, `uart_pty_stop`
 - Workbench: `BoardSignal`, `SignalPolarity`, `HaloWorkbenchConfig`, `HaloBoardWorkbench`
+
+Workbench semantics note:
+- `power_on()` / `power_off()` exist on `HaloBoardWorkbench`, but only use them if your `HaloWorkbenchConfig.signals` intentionally includes a GPIO-mapped `"power"` signal.
+- For benches where power is owned by PPK/external equipment, omit `"power"` from GPIO signals and use only reset/GP operations.
 
 ## CLI usage
 After install:
@@ -154,6 +157,12 @@ UART PTY daemon sidecar files (derived from `--path`):
 ```bash
 ESP_GPIO_PORT=/dev/tty.usbmodem1101 python -m esp32_mcp_io_extender.mcp_server
 ```
+
+MCP tools exposed:
+- Core: `gpio_ping`, `gpio_info`, `gpio_state`
+- GPIO operations: `gpio_set_mode`, `gpio_write`, `gpio_read`, `gpio_adc_read`, `gpio_pwm_write`, `gpio_digital_write_pulse`
+- Batch/diagnostics: `gpio_transaction`, `gpio_serial_ports`
+- UART operations: `gpio_uart_info`, `gpio_uart_open`, `gpio_uart_close`, `gpio_uart_write_text`, `gpio_uart_write_hex`, `gpio_uart_read`
 
 ## Firmware setup
 Build:
