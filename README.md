@@ -129,12 +129,16 @@ Build:
 ```bash
 cd firmware
 pio run
+# or build the S3 profile:
+pio run -e esp32-s3-fh4r2
 ```
 
 Flash:
 ```bash
 cd firmware
 pio run -t upload --upload-port /dev/tty.usbmodem1101
+# or flash the S3 profile:
+pio run -e esp32-s3-fh4r2 -t upload --upload-port /dev/tty.usbmodem1101
 ```
 
 ## Protocol and safety
@@ -142,7 +146,16 @@ pio run -t upload --upload-port /dev/tty.usbmodem1101
 - Validation checklist: [docs/validation.md](docs/validation.md)
 - Deterministic runbook: [docs/agent_runbook.md](docs/agent_runbook.md)
 
-Important defaults for current board profile:
-- allowed GPIOs: `0,1,3,4,5,7`
-- blocked/reserved include `2,6,8,9,10,18,19,20,21`
-- UART bridge pins are fixed: `RX=20`, `TX=21`
+Important defaults by board profile:
+- `esp-rs-c3-photo-assumed-v1` (default env `esp32-c3-devkitm-1`):
+  - allowed GPIOs: `0,1,3,4,5,7`
+  - blocked/reserved include `2,6,8,9,10,18,19,20,21`
+  - UART bridge pins are fixed: `RX=20`, `TX=21`
+- `esp32-s3-fh4r2-safe-v1` (env `esp32-s3-fh4r2`):
+  - allowed GPIOs: `1,2,4,5,6,7,8,9,10,11,12,13,14,15,18,21`
+  - blocked/reserved include boot straps, USB pins (`19`,`20`), UART bridge pins (`16`,`17`), and flash/PSRAM internal pins (`26..32`)
+  - UART bridge pins are fixed: `RX=16`, `TX=17`
+
+The S3 profile is intentionally conservative for bench safety. If a specific S3
+board revision exposes additional safe GPIOs, extend the profile and bench YAML
+together.

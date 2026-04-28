@@ -3,7 +3,9 @@
 This runbook is designed for an autonomous agent to bring up and verify the board with minimal ambiguity.
 
 ## Preconditions
-- USB-connected ESP32-C3 board.
+- USB-connected supported board:
+  - ESP32-C3 profile (`esp32-c3-devkitm-1`)
+  - ESP32-S3 profile (`esp32-s3-fh4r2`)
 - Working directory: project root.
 - Python venv exists in `.venv` with `pip install -e '.[dev,mcp]'`.
 - PlatformIO available (`pio`) or `firmware/.venv_pio` with `platformio` installed.
@@ -34,6 +36,9 @@ Option A (`pio`):
 cd firmware
 pio run
 pio run -t upload --upload-port "$ESP_PORT"
+# S3 profile:
+pio run -e esp32-s3-fh4r2
+pio run -e esp32-s3-fh4r2 -t upload --upload-port "$ESP_PORT"
 ```
 
 Option B (`platformio` in venv):
@@ -42,6 +47,9 @@ cd firmware
 source .venv_pio/bin/activate
 python -m platformio run
 python -m platformio run -t upload --upload-port "$ESP_PORT"
+# S3 profile:
+python -m platformio run -e esp32-s3-fh4r2
+python -m platformio run -e esp32-s3-fh4r2 -t upload --upload-port "$ESP_PORT"
 ```
 
 Pass criteria:
@@ -80,7 +88,7 @@ esp32mcpio --port "$ESP_PORT" uart close
 ```
 
 Pass criteria:
-- `uart-open` returns `open: true` with `rx_pin: 20` and `tx_pin: 21`.
+- `uart-open` returns `open: true` and `rx_pin`/`tx_pin` matching `uart_info.supported_rx_pin`/`supported_tx_pin`.
 - `uart-close` returns `closed: true`.
 - `uart-read` returns structured payload (`bytes`, `hex`, `text`).
 
@@ -88,13 +96,13 @@ Pass criteria:
 
 ```bash
 source .venv/bin/activate
-esp32mcpio --port "$ESP_PORT" gpio set-mode --pin 21 --mode output
+esp32mcpio --port "$ESP_PORT" gpio set-mode --pin 20 --mode output
 esp32mcpio --port "$ESP_PORT" gpio write --pin 9 --state 1
 esp32mcpio --port "$ESP_PORT" uart read --max-bytes 16 --timeout-ms 20
 ```
 
 Expected failures:
-- `set-mode 21 output` -> `pin_blocked`
+- `set-mode 20 output` -> `pin_blocked`
 - `write 9 1` -> `pin_blocked`
 - `uart-read` when UART is closed -> `uart_not_open`
 

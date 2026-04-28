@@ -9,13 +9,23 @@ namespace {
 constexpr const char *kProtocolName = "esp32-gpio-jsonl";
 constexpr const char *kProtocolVersion = "1.1.0";
 constexpr const char *kFirmwareVersion = "0.2.0";
-constexpr const char *kBoardId = "esp-rs-esp32-c3";
-constexpr const char *kBoardProfile = "esp-rs-c3-photo-assumed-v1";
 constexpr size_t kMaxLineLength = 512;
-constexpr int kDefaultUartRxPin = 20;
-constexpr int kDefaultUartTxPin = 21;
 constexpr size_t kMaxUartReadBytes = 512;
 constexpr size_t kMaxUartWriteBytes = 512;
+
+#if defined(ESP32_MCP_PROFILE_ESP32S3_FH4R2)
+constexpr const char *kBoardId = "esp32-s3-fh4r2";
+constexpr const char *kBoardProfile = "esp32-s3-fh4r2-safe-v1";
+constexpr int kDefaultUartRxPin = 16;
+constexpr int kDefaultUartTxPin = 17;
+constexpr int kPolicyMaxPin = 48;
+#else
+constexpr const char *kBoardId = "esp-rs-esp32-c3";
+constexpr const char *kBoardProfile = "esp-rs-c3-photo-assumed-v1";
+constexpr int kDefaultUartRxPin = 20;
+constexpr int kDefaultUartTxPin = 21;
+constexpr int kPolicyMaxPin = 21;
+#endif
 
 struct UartState {
   bool open;
@@ -93,6 +103,91 @@ bool cmd_is(const char *cmd, const char *a, const char *b = nullptr) {
 }
 
 PinPolicy policy_for_pin(int pin) {
+#if defined(ESP32_MCP_PROFILE_ESP32S3_FH4R2)
+  switch (pin) {
+    case 0:
+      return PinPolicy(true, true, false, false, false, false, "GPIO0", "boot_strap");
+    case 1:
+      return PinPolicy(true, false, true, true, true, true, "GPIO1/A0", "allowed");
+    case 2:
+      return PinPolicy(true, false, true, true, true, true, "GPIO2/A1", "allowed");
+    case 3:
+      return PinPolicy(true, true, false, false, false, false, "GPIO3", "boot_strap");
+    case 4:
+      return PinPolicy(true, false, true, true, true, true, "GPIO4/A2", "allowed");
+    case 5:
+      return PinPolicy(true, false, true, true, true, true, "GPIO5/A3", "allowed");
+    case 6:
+      return PinPolicy(true, false, true, true, true, true, "GPIO6/A4", "allowed");
+    case 7:
+      return PinPolicy(true, false, true, true, true, true, "GPIO7/A5", "allowed");
+    case 8:
+      return PinPolicy(true, false, true, true, true, true, "GPIO8/A6", "allowed");
+    case 9:
+      return PinPolicy(true, false, true, true, true, true, "GPIO9/A7", "allowed");
+    case 10:
+      return PinPolicy(true, false, true, true, true, true, "GPIO10/A8", "allowed");
+    case 11:
+      return PinPolicy(true, false, true, true, false, true, "GPIO11", "allowed");
+    case 12:
+      return PinPolicy(true, false, true, true, false, true, "GPIO12", "allowed");
+    case 13:
+      return PinPolicy(true, false, true, true, false, true, "GPIO13", "allowed");
+    case 14:
+      return PinPolicy(true, false, true, true, false, true, "GPIO14", "allowed");
+    case 15:
+      return PinPolicy(true, false, true, true, false, true, "GPIO15", "allowed");
+    case 16:
+      return PinPolicy(true, true, false, false, false, false, "GPIO16", "uart_rx_reserved");
+    case 17:
+      return PinPolicy(true, true, false, false, false, false, "GPIO17", "uart_tx_reserved");
+    case 18:
+      return PinPolicy(true, false, true, true, false, true, "GPIO18", "allowed");
+    case 19:
+      return PinPolicy(true, true, false, false, false, false, "GPIO19", "usb_d_minus");
+    case 20:
+      return PinPolicy(true, true, false, false, false, false, "GPIO20", "usb_d_plus");
+    case 21:
+      return PinPolicy(true, false, true, true, false, true, "GPIO21", "allowed");
+    case 22:
+    case 23:
+    case 24:
+    case 25:
+      return PinPolicy(true, true, false, false, false, false, "NC", "not_exposed_on_board");
+    case 26:
+    case 27:
+    case 28:
+    case 29:
+    case 30:
+    case 31:
+    case 32:
+      return PinPolicy(true, true, false, false, false, false, "GPIO26-32", "spi_flash_psram_internal");
+    case 33:
+    case 34:
+    case 35:
+    case 36:
+    case 37:
+    case 38:
+    case 39:
+    case 40:
+    case 41:
+    case 42:
+      return PinPolicy(true, true, false, false, false, false, "GPIO33-42", "not_exposed_on_board");
+    case 43:
+      return PinPolicy(true, true, false, false, false, false, "GPIO43", "uart0_tx_console");
+    case 44:
+      return PinPolicy(true, true, false, false, false, false, "GPIO44", "uart0_rx_console");
+    case 45:
+    case 46:
+      return PinPolicy(true, true, false, false, false, false, "GPIO45/46", "strap_input_only");
+    case 47:
+      return PinPolicy(true, true, false, false, false, false, "GPIO47", "reserved_onboard_rgb_led");
+    case 48:
+      return PinPolicy(true, true, false, false, false, false, "GPIO48", "reserved_onboard_button");
+    default:
+      return PinPolicy();
+  }
+#else
   switch (pin) {
     case 0:
       return PinPolicy(true, false, true, true, true, true, "GPIO0/A0", "allowed");
@@ -135,6 +230,28 @@ PinPolicy policy_for_pin(int pin) {
     default:
       return PinPolicy();
   }
+#endif
+}
+
+void add_named_pins(JsonObject named) {
+#if defined(ESP32_MCP_PROFILE_ESP32S3_FH4R2)
+  named["safe_gpio4"] = 4;
+  named["safe_gpio5"] = 5;
+  named["safe_gpio6"] = 6;
+  named["safe_gpio7"] = 7;
+  named["adc_a0"] = 1;
+  named["adc_a1"] = 2;
+#else
+  named["safe_gpio3"] = 3;
+  named["safe_gpio4"] = 4;
+  named["safe_gpio5"] = 5;
+  named["safe_gpio7"] = 7;
+  named["adc_a0"] = 0;
+  named["adc_a1"] = 1;
+#endif
+
+  named["uart_rx"] = kDefaultUartRxPin;
+  named["uart_tx"] = kDefaultUartTxPin;
 }
 
 void add_meta(JsonDocument &res) {
@@ -333,7 +450,7 @@ bool validate_uart_pins(JsonVariantConst req, JsonDocument &res, int rxPin, int 
     return true;
   }
 
-  JsonObject details = reply_error(req, res, "unsupported_uart_pins", "only GPIO20(RX) and GPIO21(TX) are supported");
+  JsonObject details = reply_error(req, res, "unsupported_uart_pins", "requested UART pins are unsupported by this board profile");
   details["rx_pin"] = rxPin;
   details["tx_pin"] = txPin;
   details["supported_rx_pin"] = kDefaultUartRxPin;
@@ -429,7 +546,7 @@ void add_policy_snapshot(JsonObject out) {
   JsonObject blocked = out["blocked_pins"].to<JsonObject>();
   JsonObject pinCaps = out["pin_capabilities"].to<JsonObject>();
 
-  for (int pin = 0; pin <= 21; ++pin) {
+  for (int pin = 0; pin <= kPolicyMaxPin; ++pin) {
     PinPolicy p = policy_for_pin(pin);
     if (!p.exists) {
       continue;
@@ -450,14 +567,7 @@ void add_policy_snapshot(JsonObject out) {
   }
 
   JsonObject named = out["named_pins"].to<JsonObject>();
-  named["safe_gpio3"] = 3;
-  named["safe_gpio4"] = 4;
-  named["safe_gpio5"] = 5;
-  named["safe_gpio7"] = 7;
-  named["adc_a0"] = 0;
-  named["adc_a1"] = 1;
-  named["uart_rx"] = kDefaultUartRxPin;
-  named["uart_tx"] = kDefaultUartTxPin;
+  add_named_pins(named);
 
   JsonObject uartPins = out["uart_pins"].to<JsonObject>();
   uartPins["rx"] = kDefaultUartRxPin;

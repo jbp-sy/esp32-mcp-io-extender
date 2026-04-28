@@ -7,5 +7,5 @@
 
 ## Safety invariants
 - Blocked pins remain blocked unless intentionally revised.
-- UART pins `GPIO20`/`GPIO21` remain reserved from generic gpio commands.
+- UART pins reserved by the active board profile remain blocked from generic gpio commands.
 - Invalid input returns explicit error codes.

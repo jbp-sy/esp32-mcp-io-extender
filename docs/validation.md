@@ -4,12 +4,16 @@
 ```bash
 cd firmware
 pio run
+# optional S3 target
+pio run -e esp32-s3-fh4r2
 ```
 
 ## 2) Flash firmware
 ```bash
 cd firmware
 pio run -t upload
+# optional S3 target
+pio run -e esp32-s3-fh4r2 -t upload
 ```
 
 ## 3) Identify serial device
@@ -65,6 +69,8 @@ ESP_GPIO_PORT=/dev/tty.usbmodemXXXX python -m esp32_mcp_io_extender.mcp_server
 - `gpio_uart_close`
 
 ## Notes
-- Expected blocked behavior: attempts on `GPIO9`, `GPIO18`, `GPIO19`, `GPIO20`, `GPIO21` should return `pin_blocked`.
+- Expected blocked behavior is board-profile specific:
+  - `esp-rs-c3-photo-assumed-v1`: attempts on `GPIO9`, `GPIO18`, `GPIO19`, `GPIO20`, `GPIO21` should return `pin_blocked`.
+  - `esp32-s3-fh4r2-safe-v1`: attempts on `GPIO0`, `GPIO16`, `GPIO17`, `GPIO19`, `GPIO20`, `GPIO26` should return `pin_blocked`.
 - Expected UART guard behavior: `uart_read`/`uart_write` before `uart_open` should return `uart_not_open`.
 - If hardware is not attached, host checks can still validate import/syntax and tool registration.

@@ -40,6 +40,8 @@ Fields:
 }
 ```
 
+`meta.board_id` and `meta.board_profile` are target-specific and vary by build profile.
+
 ## Error response shape
 
 ```json
@@ -65,7 +67,7 @@ Fields:
 When serial opens, firmware emits one informational line:
 
 ```json
-{"ok":true,"event":"boot","result":{"board":"esp-rs-esp32-c3"},"meta":{...}}
+{"ok":true,"event":"boot","result":{"board":"<board_id>"},"meta":{...}}
 ```
 
 Host ignores `event` lines during request/response matching.
@@ -179,7 +181,7 @@ Request:
 ```json
 {"cmd":"uart_info"}
 ```
-Returns open/closed state and supported pins (`rx=20`, `tx=21`).
+Returns open/closed state and supported pins (`supported_rx_pin`, `supported_tx_pin`) for the active board profile.
 
 ### `uart_open`
 Request:
@@ -196,7 +198,10 @@ Request:
 }
 ```
 Notes:
-- Current firmware supports only `GPIO20` as RX and `GPIO21` as TX.
+- Current firmware accepts only the board-profile UART pin pair returned by `uart_info` (`supported_rx_pin`, `supported_tx_pin`).
+- Current profiles:
+  - `esp-rs-c3-photo-assumed-v1`: `RX=20`, `TX=21`
+  - `esp32-s3-fh4r2-safe-v1`: `RX=16`, `TX=17`
 - Supported frame formats: `8N1`, `8N2`, `8E1`, `8O1`, `7N1`, `7E1`, `7O1`.
 
 ### `uart_close`
