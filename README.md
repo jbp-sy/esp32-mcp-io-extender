@@ -99,6 +99,12 @@ workbench.gp("GP45").set(1)
 
 See [docs/abstraction_mapping.md](docs/abstraction_mapping.md) for mapping guidance.
 
+### Exported Python API surface
+- Transport/protocol: `PROTOCOL_NAME`, `SerialConfig`, `config_from_env`, `EspGpioBridge`, `CapabilitySnapshot`, `DetectedDevice`, `PortCandidate`
+- Errors: `GpioBridgeError`, `TransportError`, `DeviceError`
+- UART PTY helpers: `UartPtyManager`, `uart_pty_start`, `uart_pty_status`, `uart_pty_stop`
+- Workbench: `BoardSignal`, `SignalPolarity`, `HaloWorkbenchConfig`, `HaloBoardWorkbench`
+
 ## CLI usage
 After install:
 
@@ -116,6 +122,14 @@ esp32mcpio uart pty status --path /tmp/uart.esp32
 esp32mcpio uart pty stop --path /tmp/uart.esp32
 ```
 
+Full CLI command surface:
+- top-level: `ping`, `info`, `state`
+- GPIO: `gpio set-mode|write|pulse|read|adc|pwm`
+- UART firmware bridge: `uart info|open|close|write-text|write-hex|read`
+- UART PTY daemon (host-side): `uart pty start|status|stop`
+- discovery/options: `--list-devices`, `--list-devices --probe`, `--probe`, `--list-capabilities`
+- flat convenience: `--gpio <pin> --state <0|1> [--duration-ms <ms>] [--restore <0|1>]`
+
 Discovery behavior:
 - `--list-devices`: list serial candidates from USB descriptor heuristics.
 - `--list-devices --probe`: probe candidates and include protocol match status.
@@ -124,6 +138,17 @@ Discovery behavior:
 UART command distinction:
 - `uart open|close|write-text|write-hex|read`: firmware UART bridge control.
 - `uart pty start|stop|status`: host PTY daemon lifecycle using explicit `--path`.
+
+UART PTY daemon sidecar files (derived from `--path`):
+- `<path>`: symlink alias to active PTY slave (example `/tmp/uart.esp32`)
+- `<path>.esp32mcpio.pid`: daemon PID file
+- `<path>.esp32mcpio.state.json`: runtime state (`serial_port`, `pty_slave`, UART config, pins)
+- `<path>.esp32mcpio.lock`: startup/lifecycle lock file
+
+`esp32mcpio uart pty status --path <path>` reports:
+- lifecycle: `running`, `stale`, `pid`, `alias_exists`
+- sidecar locations: `pid_file`, `state_file`, `lock_file`
+- when available from state file: `serial_port`, `pty_slave`, `uart_baud`, `rx_pin`, `tx_pin`, `data_bits`, `parity`, `stop_bits`, `timeout_ms`
 
 ## MCP server usage
 ```bash
