@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "esp32-mcp-io-extender"
-version = "0.2.0"
+version = "0.2.1"
 description = "ESP32 GPIO/UART protocol bridge with MCP and high-level workbench API"
 readme = "README.md"
 requires-python = ">=3.10"

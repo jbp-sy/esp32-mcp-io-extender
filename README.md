@@ -8,6 +8,8 @@ This repo is the source of truth for:
 - optional MCP server entrypoint,
 - higher-level workbench abstraction (`HaloBoardWorkbench`).
 
+Release history is tracked in [CHANGELOG.md](CHANGELOG.md).
+
 ## Repository layout
 - `firmware/` PlatformIO Arduino firmware
 - `src/esp32_mcp_io_extender/` installable Python package
@@ -27,13 +29,13 @@ python -m pip install --upgrade pip
 From git (recommended for cross-repo integration):
 
 ```bash
-pip install 'esp32-mcp-io-extender @ git+https://github.com/jbp-sy/esp32-mcp-io-extender.git@main'
+pip install 'esp32-mcp-io-extender @ git+https://github.com/jbp-sy/esp32-mcp-io-extender.git@v0.2.1'
 ```
 
 With MCP support:
 
 ```bash
-pip install 'esp32-mcp-io-extender[mcp] @ git+https://github.com/jbp-sy/esp32-mcp-io-extender.git@main'
+pip install 'esp32-mcp-io-extender[mcp] @ git+https://github.com/jbp-sy/esp32-mcp-io-extender.git@v0.2.1'
 ```
 
 Local dev install:
