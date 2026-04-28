@@ -32,6 +32,11 @@ class _FakeBridge:
 
     def call(self, cmd: str, **kwargs):
         self.calls.append((cmd, kwargs))
+        if cmd == "uart_info":
+            return {
+                "supported_rx_pin": 16,
+                "supported_tx_pin": 17,
+            }
         return {"cmd": cmd, **kwargs}
 
     def close(self) -> None:
@@ -131,15 +136,88 @@ def test_grouped_uart_open_uses_uart_baud_without_changing_serial_baud() -> None
     code = cli.main(["--port", "/dev/test", "uart", "open", "--baud", "9600"])
 
     assert code == 0
+    assert ("uart_info", {}) in _FakeBridge.calls
     assert ("uart_open", {
         "baud": 9600,
-        "rx_pin": 20,
-        "tx_pin": 21,
+        "rx_pin": 16,
+        "tx_pin": 17,
         "data_bits": 8,
         "parity": "N",
         "stop_bits": 1,
         "timeout_ms": 20,
     }) in _FakeBridge.calls
+
+
+def test_parser_rejects_uart_pty_start_without_path() -> None:
+    with pytest.raises(SystemExit):
+        cli.build_parser().parse_args(["uart", "pty", "start"])
+
+
+def test_uart_pty_start_dispatches_to_helper(monkeypatch) -> None:
+    seen: dict[str, object] = {}
+
+    def _fake_start(**kwargs):
+        seen.update(kwargs)
+        return {"running": True}
+
+    monkeypatch.setattr(cli, "uart_pty_start", _fake_start)
+    code = cli.main(
+        [
+            "--port",
+            "/dev/test",
+            "--baud",
+            "115200",
+            "--timeout",
+            "3.0",
+            "--retries",
+            "1",
+            "uart",
+            "pty",
+            "start",
+            "--path",
+            "/tmp/uart.esp32",
+            "--name",
+            "esp32",
+            "--baud",
+            "9600",
+            "--timeout-ms",
+            "50",
+        ]
+    )
+
+    assert code == 0
+    assert seen["path"] == "/tmp/uart.esp32"
+    assert seen["name"] == "esp32"
+    assert seen["uart_baud"] == 9600
+    assert seen["timeout_ms"] == 50
+
+
+def test_uart_pty_status_dispatches_to_helper(monkeypatch) -> None:
+    seen: dict[str, object] = {}
+
+    def _fake_status(**kwargs):
+        seen.update(kwargs)
+        return {"running": False}
+
+    monkeypatch.setattr(cli, "uart_pty_status", _fake_status)
+    code = cli.main(["uart", "pty", "status", "--path", "/tmp/uart.esp32"])
+
+    assert code == 0
+    assert seen["path"] == "/tmp/uart.esp32"
+
+
+def test_uart_pty_stop_dispatches_to_helper(monkeypatch) -> None:
+    seen: dict[str, object] = {}
+
+    def _fake_stop(**kwargs):
+        seen.update(kwargs)
+        return {"stopped": True}
+
+    monkeypatch.setattr(cli, "uart_pty_stop", _fake_stop)
+    code = cli.main(["uart", "pty", "stop", "--path", "/tmp/uart.esp32"])
+
+    assert code == 0
+    assert seen["path"] == "/tmp/uart.esp32"
 
 
 def test_blocked_pin_fails_before_calling_write(capsys) -> None:
