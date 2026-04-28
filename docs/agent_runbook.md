@@ -88,7 +88,7 @@ esp32mcpio --port "$ESP_PORT" uart close
 ```
 
 Pass criteria:
-- `uart-open` returns `open: true` and `rx_pin`/`tx_pin` matching `uart_info.supported_rx_pin`/`supported_tx_pin`.
+- `uart open` returns `open: true` and `rx_pin`/`tx_pin` matching `uart_info.supported_rx_pin`/`supported_tx_pin`.
 - `uart-close` returns `closed: true`.
 - `uart-read` returns structured payload (`bytes`, `hex`, `text`).
 

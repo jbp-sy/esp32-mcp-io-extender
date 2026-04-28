@@ -46,13 +46,6 @@ pip install -e '.[mcp]'
 esp32mcpio --help
 ```
 
-Alternative script names (same implementation):
-
-```bash
-esp32-mcp-io-extender --help
-esp32-mcp-io-extender-mcp --help
-```
-
 If your shell cannot find the scripts, run the module directly:
 
 ```bash
@@ -131,9 +124,6 @@ Discovery behavior:
 UART command distinction:
 - `uart open|close|write-text|write-hex|read`: firmware UART bridge control.
 - `uart pty start|stop|status`: host PTY daemon lifecycle using explicit `--path`.
-
-The previous `esp32-mcp-io-extender` CLI entrypoint remains available and maps to
-the same command implementation.
 
 ## MCP server usage
 ```bash
