@@ -16,6 +16,14 @@ This repo is the source of truth for:
 - `docs/agent_runbook.md` deterministic validation flow
 
 ## Install
+Recommended: use a local virtual environment for all setup and usage.
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+```
+
 From git (recommended for cross-repo integration):
 
 ```bash
@@ -38,11 +46,9 @@ pip install -e '.[dev,mcp]'
 
 ## CLI
 ### Setup
-Use a local virtual environment so the CLI scripts are installed on your PATH:
+With the virtual environment active, install MCP extras so the CLI scripts are on your PATH:
 
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate
 pip install -e '.[mcp]'
 esp32mcpio --help
 ```
