@@ -6,6 +6,7 @@ import sys
 from typing import Any, Sequence
 
 from .bridge import DetectedDevice, DeviceError, EspGpioBridge, SerialConfig, TransportError
+from .uart_pty import uart_pty_start, uart_pty_status, uart_pty_stop
 
 
 PIN_MODES = ["input", "input_pullup", "input_pulldown", "output", "output_open_drain"]
@@ -24,7 +25,9 @@ def build_parser() -> argparse.ArgumentParser:
             "Notes:\n"
             "  --list-devices          Lists serial candidates from descriptor heuristics.\n"
             "  --list-devices --probe  Probes candidates and reports protocol=true/false.\n"
-            "  --probe                 Probes and returns only protocol-compatible devices."
+            "  --probe                 Probes and returns only protocol-compatible devices.\n"
+            "  uart open/close/read/write controls firmware UART.\n"
+            "  uart pty start/stop/status controls host-side PTY daemon lifecycle."
         ),
     )
     p.add_argument("--port", help="Serial port (default: auto-detect)")
@@ -86,8 +89,8 @@ def build_parser() -> argparse.ArgumentParser:
 
     uart_open = sub.add_parser("uart-open")
     uart_open.add_argument("--baud", dest="uart_baud", type=int, default=115200)
-    uart_open.add_argument("--rx-pin", type=int, default=20)
-    uart_open.add_argument("--tx-pin", type=int, default=21)
+    uart_open.add_argument("--rx-pin", type=int)
+    uart_open.add_argument("--tx-pin", type=int)
     uart_open.add_argument("--data-bits", type=int, default=8)
     uart_open.add_argument("--parity", choices=["N", "E", "O", "n", "e", "o"], default="N")
     uart_open.add_argument("--stop-bits", type=int, default=1)
@@ -143,8 +146,8 @@ def build_parser() -> argparse.ArgumentParser:
 
     uart_open_grouped = uart_sub.add_parser("open")
     uart_open_grouped.add_argument("--baud", dest="uart_baud", type=int, default=115200)
-    uart_open_grouped.add_argument("--rx-pin", type=int, default=20)
-    uart_open_grouped.add_argument("--tx-pin", type=int, default=21)
+    uart_open_grouped.add_argument("--rx-pin", type=int)
+    uart_open_grouped.add_argument("--tx-pin", type=int)
     uart_open_grouped.add_argument("--data-bits", type=int, default=8)
     uart_open_grouped.add_argument("--parity", choices=["N", "E", "O", "n", "e", "o"], default="N")
     uart_open_grouped.add_argument("--stop-bits", type=int, default=1)
@@ -164,6 +167,26 @@ def build_parser() -> argparse.ArgumentParser:
     uart_read_grouped = uart_sub.add_parser("read")
     uart_read_grouped.add_argument("--max-bytes", type=int, default=128)
     uart_read_grouped.add_argument("--timeout-ms", type=int, default=20)
+
+    uart_pty = uart_sub.add_parser("pty")
+    uart_pty_sub = uart_pty.add_subparsers(dest="uart_pty_command", required=True)
+
+    uart_pty_start_cmd = uart_pty_sub.add_parser("start")
+    uart_pty_start_cmd.add_argument("--path", required=True)
+    uart_pty_start_cmd.add_argument("--name")
+    uart_pty_start_cmd.add_argument("--baud", dest="uart_baud", type=int, default=115200)
+    uart_pty_start_cmd.add_argument("--rx-pin", type=int)
+    uart_pty_start_cmd.add_argument("--tx-pin", type=int)
+    uart_pty_start_cmd.add_argument("--data-bits", type=int, default=8)
+    uart_pty_start_cmd.add_argument("--parity", choices=["N", "E", "O", "n", "e", "o"], default="N")
+    uart_pty_start_cmd.add_argument("--stop-bits", type=int, default=1)
+    uart_pty_start_cmd.add_argument("--timeout-ms", type=int, default=20)
+
+    uart_pty_stop_cmd = uart_pty_sub.add_parser("stop")
+    uart_pty_stop_cmd.add_argument("--path", required=True)
+
+    uart_pty_status_cmd = uart_pty_sub.add_parser("status")
+    uart_pty_status_cmd.add_argument("--path", required=True)
 
     return p
 
@@ -246,11 +269,24 @@ def _run_gpio_command(bridge: EspGpioBridge, args: argparse.Namespace) -> Any:
 
 
 def _run_uart_open(bridge: EspGpioBridge, args: argparse.Namespace) -> Any:
+    rx_pin = args.rx_pin
+    tx_pin = args.tx_pin
+    if rx_pin is None or tx_pin is None:
+        info = bridge.call("uart_info")
+        if not isinstance(info, dict):
+            raise ValueError("uart_info response was not an object")
+        supported_rx = info.get("supported_rx_pin")
+        supported_tx = info.get("supported_tx_pin")
+        if not isinstance(supported_rx, int) or not isinstance(supported_tx, int):
+            raise ValueError("uart_info response missing supported_rx_pin/supported_tx_pin")
+        rx_pin = supported_rx
+        tx_pin = supported_tx
+
     return bridge.call(
         "uart_open",
         baud=args.uart_baud,
-        rx_pin=args.rx_pin,
-        tx_pin=args.tx_pin,
+        rx_pin=rx_pin,
+        tx_pin=tx_pin,
         data_bits=args.data_bits,
         parity=args.parity.upper(),
         stop_bits=args.stop_bits,
@@ -272,6 +308,29 @@ def _run_uart_command(bridge: EspGpioBridge, args: argparse.Namespace) -> Any:
         return bridge.call("uart_write", hex=args.hex_data, drain=not args.no_drain)
     if command == "read":
         return bridge.call("uart_read", max_bytes=args.max_bytes, timeout_ms=args.timeout_ms)
+    if command == "pty":
+        pty_command = args.uart_pty_command
+        if pty_command == "start":
+            return uart_pty_start(
+                path=args.path,
+                name=args.name,
+                port=args.port,
+                serial_baud=args.serial_baud,
+                serial_timeout=args.timeout,
+                retries=args.retries,
+                uart_baud=args.uart_baud,
+                rx_pin=args.rx_pin,
+                tx_pin=args.tx_pin,
+                data_bits=args.data_bits,
+                parity=args.parity.upper(),
+                stop_bits=args.stop_bits,
+                timeout_ms=args.timeout_ms,
+            )
+        if pty_command == "stop":
+            return uart_pty_stop(path=args.path)
+        if pty_command == "status":
+            return uart_pty_status(path=args.path)
+        raise ValueError(f"unknown uart pty command: {pty_command}")
     raise ValueError(f"unknown uart command: {command}")
 
 

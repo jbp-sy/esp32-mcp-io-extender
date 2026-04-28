@@ -12,6 +12,12 @@ from .bridge import (
     TransportError,
     config_from_env,
 )
+from .uart_pty import (
+    UartPtyManager,
+    uart_pty_start,
+    uart_pty_status,
+    uart_pty_stop,
+)
 from .workbench import (
     BoardSignal,
     HaloBoardWorkbench,
@@ -30,6 +36,10 @@ __all__ = [
     "SerialConfig",
     "TransportError",
     "config_from_env",
+    "UartPtyManager",
+    "uart_pty_start",
+    "uart_pty_stop",
+    "uart_pty_status",
     "BoardSignal",
     "HaloBoardWorkbench",
     "HaloWorkbenchConfig",
