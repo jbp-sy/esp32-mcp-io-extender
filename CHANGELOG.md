@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.3.0 - 2026-05-05
 - Add host-side named GPIO endpoint configs for CLI and MCP.
 - Add named MCP tools and optional config-specified dynamic endpoint tools.
 - Add a benchd-derived Halo SYC-00048 named endpoint config for MCP startup.

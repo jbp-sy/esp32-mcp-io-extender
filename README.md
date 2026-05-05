@@ -29,13 +29,13 @@ python -m pip install --upgrade pip
 From git (recommended for cross-repo integration):
 
 ```bash
-pip install 'esp32-mcp-io-extender @ git+https://github.com/jbp-sy/esp32-mcp-io-extender.git@v0.2.1'
+pip install 'esp32-mcp-io-extender @ git+https://github.com/jbp-sy/esp32-mcp-io-extender.git@v0.3.0'
 ```
 
 With MCP support:
 
 ```bash
-pip install 'esp32-mcp-io-extender[mcp] @ git+https://github.com/jbp-sy/esp32-mcp-io-extender.git@v0.2.1'
+pip install 'esp32-mcp-io-extender[mcp] @ git+https://github.com/jbp-sy/esp32-mcp-io-extender.git@v0.3.0'
 ```
 
 Local dev install:
