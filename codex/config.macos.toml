@@ -1,9 +1,9 @@
 # macOS example
 
 [mcp_servers.esp32_gpio]
-command = "/Users/USER/esp32-mcp-io-extender/host/.venv/bin/python"
-args = ["/Users/USER/esp32-mcp-io-extender/host/mcp_gpio_server.py"]
-cwd = "/Users/USER/esp32-mcp-io-extender/host"
+command = "/Users/USER/esp32-mcp-io-extender/.venv/bin/python"
+args = ["-m", "esp32_mcp_io_extender.mcp_server"]
+cwd = "/Users/USER/esp32-mcp-io-extender"
 
 [mcp_servers.esp32_gpio.env]
 ESP_GPIO_PORT = "/dev/tty.usbmodemXXXX"
@@ -12,3 +12,5 @@ ESP_GPIO_TIMEOUT = "2.0"
 ESP_GPIO_BOOT_WAIT = "0.8"
 ESP_GPIO_RETRIES = "2"
 ESP_GPIO_AUTO_PORT = "1"
+ESP_GPIO_ENDPOINT_CONFIG = ""
+ESP_GPIO_MCP_TOOL_SCOPE = "both"

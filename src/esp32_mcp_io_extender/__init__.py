@@ -12,6 +12,13 @@ from .bridge import (
     TransportError,
     config_from_env,
 )
+from .named_endpoints import (
+    GpioEndpoint,
+    GpioEndpointConfig,
+    GpioEndpointTool,
+    NamedGpioController,
+    load_endpoint_config,
+)
 from .uart_pty import (
     UartPtyManager,
     uart_pty_start,
@@ -36,6 +43,11 @@ __all__ = [
     "SerialConfig",
     "TransportError",
     "config_from_env",
+    "GpioEndpoint",
+    "GpioEndpointConfig",
+    "GpioEndpointTool",
+    "NamedGpioController",
+    "load_endpoint_config",
     "UartPtyManager",
     "uart_pty_start",
     "uart_pty_stop",

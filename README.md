@@ -68,8 +68,11 @@ esp32mcpio --list-devices
 esp32mcpio --list-devices --probe
 esp32mcpio --probe
 esp32mcpio --port /dev/tty.usbmodem1101 --list-capabilities
+esp32mcpio --endpoint-config ./endpoints.json --list-endpoints
 esp32mcpio --port /dev/tty.usbmodem1101 ping
 esp32mcpio --port /dev/tty.usbmodem1101 gpio pulse --pin 4 --state 1 --duration-ms 100
+esp32mcpio --port /dev/tty.usbmodem1101 --endpoint-config ./endpoints.json endpoint pulse reset
+esp32mcpio --port /dev/tty.usbmodem1101 --endpoint-config ./endpoints.json endpoint pwm led_pwm --value 128
 esp32mcpio --port /dev/tty.usbmodem1101 uart open --baud 115200
 esp32mcpio --port /dev/tty.usbmodem1101 uart pty start --path /tmp/uart.esp32 --name esp32
 esp32mcpio uart pty status --path /tmp/uart.esp32
@@ -79,9 +82,11 @@ esp32mcpio uart pty stop --path /tmp/uart.esp32
 Full CLI command surface:
 - top-level: `ping`, `info`, `state`
 - GPIO: `gpio set-mode|write|pulse|read|adc|pwm`
+- Named endpoints: `endpoint write|pulse|read|adc|pwm` with `--endpoint-config`
 - UART firmware bridge: `uart info|open|close|write-text|write-hex|read`
 - UART PTY daemon (host-side): `uart pty start|status|stop`
 - discovery/options: `--list-devices`, `--list-devices --probe`, `--probe`, `--list-capabilities`
+- named endpoint options: `--endpoint-config`, `--list-endpoints`
 - flat convenience: `--gpio <pin> --state <0|1> [--duration-ms <ms>] [--restore <0|1>]`
 
 Discovery behavior:
@@ -149,11 +154,56 @@ workbench.gp("GP45").set(1)
 
 See [docs/abstraction_mapping.md](docs/abstraction_mapping.md) for mapping guidance.
 
+### Named endpoint config API
+Named endpoints are host-side aliases over firmware GPIO pins. Firmware safety
+policy remains authoritative; the host preflights configured pins against
+`info.policy.pin_capabilities` before changing modes or writing.
+
+```json
+{
+  "version": 1,
+  "endpoints": [
+    {
+      "name": "reset",
+      "pin": 4,
+      "capabilities": ["digital_out"],
+      "mode": "output",
+      "active_value": 0,
+      "inactive_value": 1,
+      "tools": [{"name": "reset_pulse", "operation": "pulse", "duration_ms": 120}]
+    },
+    {
+      "name": "button",
+      "pin": 5,
+      "capabilities": ["digital_out"],
+      "tools": [{"name": "button_press", "operation": "pulse", "duration_ms": 120}]
+    },
+    {
+      "name": "led_pwm",
+      "pin": 7,
+      "capabilities": ["pwm"],
+      "mode": "output",
+      "tools": [{"name": "led_pwm_write", "operation": "pwm_write"}]
+    }
+  ]
+}
+```
+
+```python
+from esp32_mcp_io_extender import EspGpioBridge, NamedGpioController, SerialConfig, load_endpoint_config
+
+bridge = EspGpioBridge(SerialConfig(port="/dev/tty.usbmodem1101", auto_port=False))
+controller = NamedGpioController(bridge, load_endpoint_config("endpoints.json"))
+controller.pulse("reset")
+controller.pwm_write("led_pwm", 128)
+```
+
 ### Exported Python API surface
 - Transport/protocol: `PROTOCOL_NAME`, `SerialConfig`, `config_from_env`, `EspGpioBridge`, `CapabilitySnapshot`, `DetectedDevice`, `PortCandidate`
 - Errors: `GpioBridgeError`, `TransportError`, `DeviceError`
 - UART PTY helpers: `UartPtyManager`, `uart_pty_start`, `uart_pty_status`, `uart_pty_stop`
 - Workbench: `BoardSignal`, `SignalPolarity`, `HaloWorkbenchConfig`, `HaloBoardWorkbench`
+- Named endpoints: `GpioEndpoint`, `GpioEndpointTool`, `GpioEndpointConfig`, `NamedGpioController`, `load_endpoint_config`
 
 Workbench semantics note:
 - `power_on()` / `power_off()` exist on `HaloBoardWorkbench`, but only use them if your `HaloWorkbenchConfig.signals` intentionally includes a GPIO-mapped `"power"` signal.
@@ -162,13 +212,21 @@ Workbench semantics note:
 ## MCP server
 ```bash
 ESP_GPIO_PORT=/dev/tty.usbmodem1101 python -m esp32_mcp_io_extender.mcp_server
+ESP_GPIO_PORT=/dev/tty.usbmodem1101 ESP_GPIO_ENDPOINT_CONFIG=./endpoints.json python -m esp32_mcp_io_extender.mcp_server
+python -m esp32_mcp_io_extender.mcp_server --endpoint-config ./endpoints.json --tool-scope named
 ```
 
 MCP tools exposed:
 - Core: `gpio_ping`, `gpio_info`, `gpio_state`
 - GPIO operations: `gpio_set_mode`, `gpio_write`, `gpio_read`, `gpio_adc_read`, `gpio_pwm_write`, `gpio_digital_write_pulse`
+- Named endpoint operations: `gpio_named_endpoints`, `gpio_named_write`, `gpio_named_read`, `gpio_named_adc_read`, `gpio_named_pwm_write`, `gpio_named_pulse`
+- Config-specified named tools: exact tool names listed in endpoint config `tools[]`, such as `reset_pulse` or `led_pwm_write`
 - Batch/diagnostics: `gpio_transaction`, `gpio_serial_ports`
 - UART operations: `gpio_uart_info`, `gpio_uart_open`, `gpio_uart_close`, `gpio_uart_write_text`, `gpio_uart_write_hex`, `gpio_uart_read`
+
+MCP startup options:
+- `ESP_GPIO_ENDPOINT_CONFIG` or `--endpoint-config`: native JSON endpoint config path.
+- `ESP_GPIO_MCP_TOOL_SCOPE` or `--tool-scope`: `raw`, `named`, or `both` (default `both`).
 
 ## Firmware setup
 Build:

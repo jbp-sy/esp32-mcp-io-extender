@@ -56,6 +56,13 @@ source .venv/bin/activate
 ESP_GPIO_PORT=/dev/tty.usbmodemXXXX python -m esp32_mcp_io_extender.mcp_server
 ```
 
+If validating named endpoints, also run:
+
+```bash
+esp32mcpio --endpoint-config ./endpoints.json --list-endpoints
+ESP_GPIO_PORT=/dev/tty.usbmodemXXXX ESP_GPIO_ENDPOINT_CONFIG=./endpoints.json python -m esp32_mcp_io_extender.mcp_server --tool-scope both
+```
+
 ## 7) MCP tool checks from Codex
 - `gpio_ping`
 - `gpio_info`
@@ -63,6 +70,8 @@ ESP_GPIO_PORT=/dev/tty.usbmodemXXXX python -m esp32_mcp_io_extender.mcp_server
 - `gpio_write` (`pin=4`, `value=1`, then `0`)
 - `gpio_read` (`pin=3` after input mode)
 - `gpio_adc_read` (safe ADC pin)
+- `gpio_named_endpoints`
+- `gpio_named_pulse` / config-specific named tools when an endpoint config is loaded
 - `gpio_uart_info`
 - `gpio_uart_open` (`baud=115200`)
 - `gpio_uart_read` (`max_bytes=64`, `timeout_ms=50`)

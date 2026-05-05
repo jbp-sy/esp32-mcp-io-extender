@@ -2,10 +2,12 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from typing import Any, Sequence
 
 from .bridge import DetectedDevice, DeviceError, EspGpioBridge, SerialConfig, TransportError
+from .named_endpoints import GpioEndpointConfig, NamedGpioController, load_endpoint_config
 from .uart_pty import uart_pty_start, uart_pty_status, uart_pty_stop
 
 
@@ -34,6 +36,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--baud", dest="serial_baud", type=int, default=115200)
     p.add_argument("--timeout", type=float, default=2.0)
     p.add_argument("--retries", type=int, default=2)
+    p.add_argument("--endpoint-config", help="Native JSON named endpoint config path")
     p.add_argument(
         "--list-devices",
         action="store_true",
@@ -45,6 +48,7 @@ def build_parser() -> argparse.ArgumentParser:
         help="Probe with ping/info; when used alone, prints only protocol-compatible devices",
     )
     p.add_argument("--list-capabilities", action="store_true", help="Print firmware capability policy for --port")
+    p.add_argument("--list-endpoints", action="store_true", help="Print configured named GPIO endpoints")
 
     p.add_argument("--gpio", type=int, help="Flat convenience GPIO pin selector (auto set-mode output)")
     p.add_argument("--state", type=int, choices=[0, 1], help="Flat convenience GPIO state")
@@ -84,6 +88,31 @@ def build_parser() -> argparse.ArgumentParser:
     gpio_pwm.add_argument("--value", type=int, required=True)
     gpio_pwm.add_argument("--freq", type=int, default=5000)
     gpio_pwm.add_argument("--resolution", type=int, default=8)
+
+    endpoint = sub.add_parser("endpoint")
+    endpoint_sub = endpoint.add_subparsers(dest="endpoint_command", required=True)
+
+    endpoint_write = endpoint_sub.add_parser("write")
+    endpoint_write.add_argument("name")
+    endpoint_write.add_argument("--state", type=int, choices=[0, 1], required=True)
+
+    endpoint_pulse = endpoint_sub.add_parser("pulse")
+    endpoint_pulse.add_argument("name")
+    endpoint_pulse.add_argument("--duration-ms", type=int)
+    endpoint_pulse.add_argument("--state", dest="pulse_value", type=int, choices=[0, 1])
+    endpoint_pulse.add_argument("--restore", type=int, choices=[0, 1])
+
+    endpoint_read = endpoint_sub.add_parser("read")
+    endpoint_read.add_argument("name")
+
+    endpoint_adc = endpoint_sub.add_parser("adc")
+    endpoint_adc.add_argument("name")
+
+    endpoint_pwm = endpoint_sub.add_parser("pwm")
+    endpoint_pwm.add_argument("name")
+    endpoint_pwm.add_argument("--value", type=int, required=True)
+    endpoint_pwm.add_argument("--freq", type=int, default=5000)
+    endpoint_pwm.add_argument("--resolution", type=int, default=8)
 
     uart = sub.add_parser("uart")
     uart_sub = uart.add_subparsers(dest="uart_command", required=True)
@@ -164,6 +193,13 @@ def _bridge_from_args(args: argparse.Namespace) -> EspGpioBridge:
             auto_port=not bool(args.port),
         )
     )
+
+
+def _endpoint_config_from_args(args: argparse.Namespace) -> GpioEndpointConfig:
+    path = args.endpoint_config or os.environ.get("ESP_GPIO_ENDPOINT_CONFIG")
+    if not path:
+        raise ValueError("--endpoint-config or ESP_GPIO_ENDPOINT_CONFIG is required for named endpoints")
+    return load_endpoint_config(path)
 
 
 def _capability_for_mode(mode: str) -> str:
@@ -296,6 +332,27 @@ def _run_flat_gpio(bridge: EspGpioBridge, args: argparse.Namespace) -> Any:
     return bridge.call("write", pin=args.gpio, value=args.state)
 
 
+def _run_endpoint_command(bridge: EspGpioBridge, args: argparse.Namespace) -> Any:
+    controller = NamedGpioController(bridge, _endpoint_config_from_args(args))
+    command = args.endpoint_command
+    if command == "write":
+        return controller.write(args.name, args.state)
+    if command == "pulse":
+        return controller.pulse(
+            args.name,
+            duration_ms=args.duration_ms,
+            pulse_value=args.pulse_value,
+            restore=args.restore,
+        )
+    if command == "read":
+        return controller.read(args.name)
+    if command == "adc":
+        return controller.adc_read(args.name)
+    if command == "pwm":
+        return controller.pwm_write(args.name, args.value, freq=args.freq, resolution=args.resolution)
+    raise ValueError(f"unknown endpoint command: {command}")
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
@@ -306,6 +363,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         and not args.list_devices
         and not args.probe
         and not args.list_capabilities
+        and not args.list_endpoints
     ):
         parser.print_help()
         return 0
@@ -319,6 +377,10 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     bridge: EspGpioBridge | None = None
     try:
+        if args.list_endpoints:
+            print_json(_endpoint_config_from_args(args).catalog())
+            return 0
+
         bridge = _bridge_from_args(args)
 
         if args.list_capabilities:
@@ -333,10 +395,14 @@ def main(argv: Sequence[str] | None = None) -> int:
             print_json(bridge.call("state"))
         elif args.command == "gpio":
             print_json(_run_gpio_command(bridge, args))
+        elif args.command == "endpoint":
+            print_json(_run_endpoint_command(bridge, args))
         elif args.command == "uart":
             print_json(_run_uart_command(bridge, args))
         else:
-            raise ValueError("command required unless --list-devices, --list-capabilities, or --gpio is used")
+            raise ValueError(
+                "command required unless --list-devices, --list-capabilities, --list-endpoints, or --gpio is used"
+            )
 
         return 0
     except (DeviceError, TransportError, ValueError, json.JSONDecodeError) as exc:

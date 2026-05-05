@@ -75,6 +75,7 @@ Pass criteria:
 - `ping` response has `ok: true` and `meta.protocol == "esp32-gpio-jsonl"`.
 - `info` includes `policy.allowed_pins` and `policy.blocked_pins`.
 - GPIO set/write/read/adc commands return structured JSON and no CLI error.
+- If a named endpoint config is being used, `esp32mcpio --endpoint-config <path> --list-endpoints` prints the configured catalog.
 
 ## 5) UART bridge smoke test
 
@@ -130,6 +131,12 @@ source .venv/bin/activate
 ESP_GPIO_PORT="$ESP_PORT" python -m esp32_mcp_io_extender.mcp_server
 ```
 
+Optional named endpoint surface:
+
+```bash
+ESP_GPIO_PORT="$ESP_PORT" ESP_GPIO_ENDPOINT_CONFIG=./endpoints.json python -m esp32_mcp_io_extender.mcp_server --tool-scope both
+```
+
 Required tool names must include:
 - `gpio_ping`
 - `gpio_info`
@@ -139,12 +146,22 @@ Required tool names must include:
 - `gpio_read`
 - `gpio_adc_read`
 - `gpio_pwm_write`
+- `gpio_named_endpoints`
+- `gpio_named_write`
+- `gpio_named_read`
+- `gpio_named_adc_read`
+- `gpio_named_pwm_write`
+- `gpio_named_pulse`
 - `gpio_uart_info`
 - `gpio_uart_open`
 - `gpio_uart_close`
 - `gpio_uart_write_text`
 - `gpio_uart_write_hex`
 - `gpio_uart_read`
+
+When `ESP_GPIO_ENDPOINT_CONFIG` points at a config with `tools[]`, required
+dynamic tool names are the exact names from that config, for example
+`reset_pulse`.
 
 ## 9) Report template for agent handoff
 

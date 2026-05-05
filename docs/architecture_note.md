@@ -43,6 +43,8 @@
   - `gpio_serial_ports`
   - `gpio_uart_*` toolset for UART debugging workflows
 - Added standalone CLI tester (`esp32mcpio`) for bench diagnostics.
+- Added host-side named endpoint config/controller support for CLI and MCP
+  without changing firmware protocol commands.
 
 ### Documentation/config
 - Rewrote README with full setup and validation flow.

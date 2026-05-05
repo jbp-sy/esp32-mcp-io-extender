@@ -107,6 +107,10 @@ Host tools use this policy as the capability source for `esp32mcpio
 --list-capabilities` and for preflight checks before GPIO operations. Firmware
 policy remains authoritative if host preflight is bypassed.
 
+Named endpoints exposed by the Python CLI/MCP server are host-side aliases over
+this policy data. They do not add serial commands or change firmware safety
+behavior.
+
 ### `state`
 Returns tracked runtime state:
 - `pin_modes`

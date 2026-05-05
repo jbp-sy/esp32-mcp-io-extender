@@ -4,6 +4,7 @@ import pytest
 
 import esp32_mcp_io_extender.cli as cli
 from esp32_mcp_io_extender.bridge import CapabilitySnapshot, DetectedDevice
+from esp32_mcp_io_extender.named_endpoints import GpioEndpoint, GpioEndpointConfig
 
 
 class _FakeBridge:
@@ -101,6 +102,50 @@ def test_main_lists_capabilities(capsys) -> None:
 
     assert code == 0
     assert "pin_capabilities" in capsys.readouterr().out
+
+
+def test_main_lists_named_endpoints(capsys, monkeypatch) -> None:
+    config = GpioEndpointConfig(endpoints=(GpioEndpoint(name="reset", pin=4, capabilities=("digital_out",)),))
+    monkeypatch.setattr(cli, "load_endpoint_config", lambda path: config)
+
+    code = cli.main(["--endpoint-config", "/tmp/endpoints.json", "--list-endpoints"])
+
+    assert code == 0
+    assert '"reset"' in capsys.readouterr().out
+
+
+def test_endpoint_pulse_dispatches_named_controller(monkeypatch) -> None:
+    seen: dict[str, object] = {}
+
+    class _FakeController:
+        def __init__(self, bridge, config) -> None:
+            seen["bridge"] = bridge
+            seen["config"] = config
+
+        def pulse(self, name: str, *, duration_ms=None, pulse_value=None, restore=None):
+            seen.update({"name": name, "duration_ms": duration_ms, "pulse_value": pulse_value, "restore": restore})
+            return {"ok": True}
+
+    monkeypatch.setattr(cli, "load_endpoint_config", lambda path: object())
+    monkeypatch.setattr(cli, "NamedGpioController", _FakeController)
+
+    code = cli.main(
+        [
+            "--port",
+            "/dev/test",
+            "--endpoint-config",
+            "/tmp/endpoints.json",
+            "endpoint",
+            "pulse",
+            "reset",
+            "--duration-ms",
+            "120",
+        ]
+    )
+
+    assert code == 0
+    assert seen["name"] == "reset"
+    assert seen["duration_ms"] == 120
 
 
 def test_grouped_gpio_pulse_checks_capability_and_calls_bridge() -> None:
