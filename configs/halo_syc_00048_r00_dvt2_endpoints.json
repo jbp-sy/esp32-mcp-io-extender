@@ -1,0 +1,111 @@
+{
+  "version": 1,
+  "endpoints": [
+    {
+      "name": "led_blue_pwm",
+      "pin": 1,
+      "capabilities": ["digital_in"],
+      "mode": "input",
+      "description": "Halo SYC-00048 J2.2 LED_BLUE_PWM status observation input from benchd profile.",
+      "tools": [
+        {
+          "name": "halo_led_blue_pwm_read",
+          "operation": "read",
+          "description": "Read Halo LED_BLUE_PWM status on ESP32 GPIO1."
+        }
+      ]
+    },
+    {
+      "name": "button",
+      "pin": 5,
+      "capabilities": ["digital_out"],
+      "mode": "output",
+      "active_value": 1,
+      "inactive_value": 0,
+      "description": "Halo SYC-00048 J2.3 BUTTON emulation output from benchd profile.",
+      "tools": [
+        {
+          "name": "halo_button_press",
+          "operation": "pulse",
+          "duration_ms": 120,
+          "description": "Pulse the Halo BUTTON line high, then restore low."
+        }
+      ]
+    },
+    {
+      "name": "led_red_pwm",
+      "pin": 0,
+      "capabilities": ["digital_in"],
+      "mode": "input",
+      "description": "Halo SYC-00048 J2.4 LED_RED_PWM status observation input from benchd profile.",
+      "tools": [
+        {
+          "name": "halo_led_red_pwm_read",
+          "operation": "read",
+          "description": "Read Halo LED_RED_PWM status on ESP32 GPIO0."
+        }
+      ]
+    },
+    {
+      "name": "gp45_tst_cmd",
+      "pin": 7,
+      "capabilities": ["digital_out"],
+      "mode": "output",
+      "active_value": 1,
+      "inactive_value": 0,
+      "description": "Halo SYC-00048 J2.5 GP45_TST_CMD test command output from benchd profile.",
+      "tools": [
+        {
+          "name": "halo_gp45_tst_cmd_write",
+          "operation": "write",
+          "description": "Set the Halo GP45_TST_CMD line."
+        }
+      ]
+    },
+    {
+      "name": "led_green_pwm",
+      "pin": 2,
+      "capabilities": ["digital_in"],
+      "mode": "input",
+      "description": "Halo SYC-00048 J2.6 LED_GREEN_PWM status observation input from benchd profile. Current ESP32-C3 firmware policy blocks GPIO2 as reserved_onboard_rgb_led.",
+      "tools": [
+        {
+          "name": "halo_led_green_pwm_read",
+          "operation": "read",
+          "description": "Read Halo LED_GREEN_PWM status on ESP32 GPIO2 when firmware policy allows it."
+        }
+      ]
+    },
+    {
+      "name": "cap_status",
+      "pin": 3,
+      "capabilities": ["digital_in"],
+      "mode": "input",
+      "description": "Halo SYC-00048 J2.7 CAP_STATUS readback input from benchd profile.",
+      "tools": [
+        {
+          "name": "halo_cap_status_read",
+          "operation": "read",
+          "description": "Read the Halo CAP_STATUS line."
+        }
+      ]
+    },
+    {
+      "name": "reset_n",
+      "pin": 4,
+      "capabilities": ["digital_out"],
+      "mode": "output",
+      "active_value": 0,
+      "inactive_value": 1,
+      "description": "Halo SYC-00048 J2.9 active-low ~RESET output from benchd profile.",
+      "tools": [
+        {
+          "name": "halo_reset_pulse",
+          "operation": "pulse",
+          "duration_ms": 120,
+          "description": "Pulse the Halo ~RESET line low, then restore high."
+        }
+      ]
+    }
+  ]
+}

@@ -214,6 +214,7 @@ Workbench semantics note:
 ESP_GPIO_PORT=/dev/tty.usbmodem1101 python -m esp32_mcp_io_extender.mcp_server
 ESP_GPIO_PORT=/dev/tty.usbmodem1101 ESP_GPIO_ENDPOINT_CONFIG=./endpoints.json python -m esp32_mcp_io_extender.mcp_server
 python -m esp32_mcp_io_extender.mcp_server --endpoint-config ./endpoints.json --tool-scope named
+python -m esp32_mcp_io_extender.mcp_server --endpoint-config configs/halo_syc_00048_r00_dvt2_endpoints.json --tool-scope named
 ```
 
 MCP tools exposed:

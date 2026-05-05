@@ -81,6 +81,9 @@ ESP_GPIO_ENDPOINT_CONFIG=./endpoints.json python -m esp32_mcp_io_extender.mcp_se
 Set `ESP_GPIO_MCP_TOOL_SCOPE=named` or pass `--tool-scope named` when Codex
 should only see named endpoint tools.
 
+The repo includes a benchd-derived Halo profile conversion at
+`configs/halo_syc_00048_r00_dvt2_endpoints.json`.
+
 ## Safety and policy notes
 - Firmware safety policy remains authoritative (blocked pins, UART reservation).
 - Workbench methods rely on bridge errors for policy enforcement.
